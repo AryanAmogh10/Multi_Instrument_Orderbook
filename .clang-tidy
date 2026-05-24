@@ -1,0 +1,19 @@
+---
+Checks: >
+  -*,
+  bugprone-*,
+  cppcoreguidelines-*,
+  performance-*,
+  modernize-*,
+  readability-*,
+  portability-*,
+  -modernize-use-trailing-return-type,
+  -readability-magic-numbers,
+  -cppcoreguidelines-avoid-magic-numbers,
+  -cppcoreguidelines-pro-bounds-pointer-arithmetic,
+  -cppcoreguidelines-pro-bounds-array-to-pointer-decay,
+  -readability-identifier-length
+
+WarningsAsErrors: ''
+HeaderFilterRegex: '.*/(include|src)/velox/.*'
+FormatStyle: file
