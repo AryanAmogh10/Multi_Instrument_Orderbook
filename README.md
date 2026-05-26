@@ -147,6 +147,24 @@ docs/             – Architecture, protocol spec, benchmark notes
 
 ---
 
+## Performance
+
+Single-threaded microbenchmarks on the matching hot path (Release build, GCC 15.2, 12-core x86_64 @ 3.3 GHz). Measured with Google Benchmark — these are wall-clock times per operation, not synthetic estimates.
+
+| Operation | Time / op | Throughput |
+|---|---|---|
+| Rest a limit order | ~310 ns | 3.2 M ops/s |
+| Cross + fill a pair (1 trade) | ~960 ns | 1.04 M ops/s |
+| Cancel a resting order | ~500 ns | 2.0 M ops/s |
+| Market IOC vs deep book (1 fill) | ~260 ns | 3.8 M ops/s |
+| Sweep 100 levels | ~12 µs | 8.2 M fills/s |
+| Sweep 500 levels | ~77 µs | 6.5 M fills/s |
+| Sweep 1000 levels | ~157 µs | 6.4 M fills/s |
+
+Sweep throughput scales close to linearly with depth, as expected — most of the cost is walking the price ladder and recording trades. Numbers will vary by hardware; rebuild with `-DVELOX_BUILD_BENCHMARKS=ON` and run `./build/benchmarks/velox_bench` to measure on your own machine.
+
+---
+
 ## License
 
 MIT — see [LICENSE](LICENSE).

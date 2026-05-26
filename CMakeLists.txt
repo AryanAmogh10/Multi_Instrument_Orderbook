@@ -83,6 +83,7 @@ if(VELOX_BUILD_BENCHMARKS)
         GIT_TAG        v1.8.3
     )
     set(BENCHMARK_ENABLE_TESTING OFF CACHE BOOL "" FORCE)
+    set(BENCHMARK_ENABLE_WERROR OFF CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(benchmark)
     add_subdirectory(benchmarks)
 endif()

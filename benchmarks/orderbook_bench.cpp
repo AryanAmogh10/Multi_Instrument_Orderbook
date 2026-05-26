@@ -24,16 +24,6 @@ using namespace velox;
 // Helpers
 // ---------------------------------------------------------------------------
 
-static const InstrumentRegistry& registry() {
-    static InstrumentRegistry r = [] {
-        InstrumentRegistry reg;
-        reg.add(InstrumentSpec{InstrumentId{1}, "BENCH", InstrumentType::Equity, 1, 1, "USD"});
-        reg.freeze();
-        return reg;
-    }();
-    return r;
-}
-
 static constexpr InstrumentId kInst{1};
 static constexpr std::size_t  kPoolCap = 131072;
 
@@ -66,7 +56,10 @@ static void BM_LimitRests(benchmark::State& state) {
     }
     state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 }
-BENCHMARK(BM_LimitRests);
+// Capped iterations: this bench leaks one order per iteration into the book
+// on purpose (measures the resting-insert path), so we must not exceed the
+// pool capacity.
+BENCHMARK(BM_LimitRests)->Iterations(100000);
 
 // ---------------------------------------------------------------------------
 // BM_LimitCross: one resting ask + one crossing bid → one trade per iteration
