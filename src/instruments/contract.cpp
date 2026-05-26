@@ -6,7 +6,7 @@
 namespace velox {
 
 std::string ExpiryDate::to_string() const {
-    char buf[11];
+    char buf[16];
     std::snprintf(buf, sizeof(buf), "%04d-%02d-%02d",
                   static_cast<int>(year),
                   static_cast<int>(month),
@@ -20,7 +20,7 @@ std::string Contract::occ_symbol() const {
     for (std::size_t i = 0; i < underlying.size() && i < 6; ++i)
         root[i] = underlying[i];
 
-    char date[7];
+    char date[12];
     std::snprintf(date, sizeof(date), "%02d%02d%02d",
                   static_cast<int>(expiry.year % 100),
                   static_cast<int>(expiry.month),
