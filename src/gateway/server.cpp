@@ -6,7 +6,7 @@
 
 namespace velox::gateway {
 
-Server::Server(MatchingEngine& engine, std::uint16_t port)
+Server::Server(Engine& engine, std::uint16_t port)
     : engine_(engine), dispatcher_(engine), port_(port) {}
 
 Server::~Server() {

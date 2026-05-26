@@ -1,16 +1,16 @@
-#include "velox/matching/book_matcher.hpp"
+#include "velox/matching/matcher.hpp"
 
 namespace velox {
 
-bool BookMatcher::prices_cross(Side taker_side, Price taker_limit,
-                               Price maker_price) noexcept {
+bool Matcher::prices_cross(Side taker_side, Price taker_limit,
+                            Price maker_price) noexcept {
     if (taker_side == Side::Buy) {
         return to_underlying(maker_price) <= to_underlying(taker_limit);
     }
     return to_underlying(maker_price) >= to_underlying(taker_limit);
 }
 
-bool BookMatcher::can_fully_fill(const Order& taker) const {
+bool Matcher::can_fully_fill(const Order& taker) const {
     const Side opp = opposite(taker.side);
     Quantity need = taker.remaining();
 
@@ -32,7 +32,7 @@ bool BookMatcher::can_fully_fill(const Order& taker) const {
     return walk(book_.asks());
 }
 
-void BookMatcher::match(Order& taker, std::vector<Trade>& trades) {
+void Matcher::match(Order& taker, std::vector<Trade>& trades) {
     const Side opp = opposite(taker.side);
     while (to_underlying(taker.remaining()) > 0) {
         Order* maker = book_.peek_top(opp);
@@ -44,7 +44,7 @@ void BookMatcher::match(Order& taker, std::vector<Trade>& trades) {
         }
 
         const Quantity fill = qty_min(taker.remaining(), maker->remaining());
-        const Price trade_price = maker->limit_price;  // resting side sets the price
+        const Price trade_price = maker->limit_price;  // maker sets the price
 
         taker.filled_qty  += fill;
         maker->filled_qty += fill;
@@ -63,10 +63,10 @@ void BookMatcher::match(Order& taker, std::vector<Trade>& trades) {
     }
 }
 
-SubmitResult BookMatcher::submit(Order* order) {
+MatchResult Matcher::submit(Order* order) {
     const std::uint64_t t0 = now_ns();
 
-    SubmitResult result{order, {}};
+    MatchResult result{order, {}};
     auto reject = [&] {
         order->status = OrderStatus::Rejected;
         return result;
@@ -92,7 +92,7 @@ SubmitResult BookMatcher::submit(Order* order) {
                             ? OrderStatus::PartiallyFilled
                             : OrderStatus::Cancelled;
     } else {
-        // GTC limit: rest the unfilled remainder in the book.
+        // GTC limit: rest the unfilled remainder
         order->status = to_underlying(order->filled_qty) > 0
                             ? OrderStatus::PartiallyFilled
                             : OrderStatus::New;
@@ -105,7 +105,7 @@ SubmitResult BookMatcher::submit(Order* order) {
     return result;
 }
 
-bool BookMatcher::cancel(OrderId id) {
+bool Matcher::cancel(OrderId id) {
     Order* o = book_.cancel_and_get(id);
     if (!o) return false;
     o->status = OrderStatus::Cancelled;
@@ -113,7 +113,7 @@ bool BookMatcher::cancel(OrderId id) {
     return true;
 }
 
-void BookMatcher::cancel_all() {
+void Matcher::cancel_all() {
     book_.clear_and_drain([this](Order* o) {
         o->status = OrderStatus::Cancelled;
         pool_.release(o);

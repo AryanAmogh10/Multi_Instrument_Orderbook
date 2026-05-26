@@ -1,11 +1,11 @@
-#include "velox/instruments/option_chain.hpp"
+#include "velox/instruments/chain.hpp"
 
 namespace velox {
 
-OptionChain::OptionChain(std::string underlying)
+Chain::Chain(std::string underlying)
     : underlying_(std::move(underlying)) {}
 
-bool OptionChain::add(InstrumentId id, const OptionContract& contract) {
+bool Chain::add(InstrumentId id, const Contract& contract) {
     auto uid = to_underlying(id);
     if (by_id_.count(uid)) return false;
 
@@ -23,7 +23,7 @@ bool OptionChain::add(InstrumentId id, const OptionContract& contract) {
     return true;
 }
 
-bool OptionChain::remove(InstrumentId id) {
+bool Chain::remove(InstrumentId id) {
     auto uid = to_underlying(id);
     auto it = by_id_.find(uid);
     if (it == by_id_.end()) return false;
@@ -44,7 +44,7 @@ bool OptionChain::remove(InstrumentId id) {
     return true;
 }
 
-std::optional<InstrumentId> OptionChain::find(
+std::optional<InstrumentId> Chain::find(
     ExpiryDate expiry, Price strike, OptionType type) const noexcept
 {
     auto exp_it = levels_.find(expiry);
@@ -55,7 +55,7 @@ std::optional<InstrumentId> OptionChain::find(
     return (type == OptionType::Call) ? slot.call : slot.put;
 }
 
-std::vector<InstrumentId> OptionChain::at_expiry(ExpiryDate expiry) const {
+std::vector<InstrumentId> Chain::at_expiry(ExpiryDate expiry) const {
     std::vector<InstrumentId> result;
     auto exp_it = levels_.find(expiry);
     if (exp_it == levels_.end()) return result;
@@ -66,7 +66,7 @@ std::vector<InstrumentId> OptionChain::at_expiry(ExpiryDate expiry) const {
     return result;
 }
 
-std::vector<InstrumentId> OptionChain::calls_at(ExpiryDate expiry) const {
+std::vector<InstrumentId> Chain::calls_at(ExpiryDate expiry) const {
     std::vector<InstrumentId> result;
     auto exp_it = levels_.find(expiry);
     if (exp_it == levels_.end()) return result;
@@ -75,7 +75,7 @@ std::vector<InstrumentId> OptionChain::calls_at(ExpiryDate expiry) const {
     return result;
 }
 
-std::vector<InstrumentId> OptionChain::puts_at(ExpiryDate expiry) const {
+std::vector<InstrumentId> Chain::puts_at(ExpiryDate expiry) const {
     std::vector<InstrumentId> result;
     auto exp_it = levels_.find(expiry);
     if (exp_it == levels_.end()) return result;
@@ -84,14 +84,14 @@ std::vector<InstrumentId> OptionChain::puts_at(ExpiryDate expiry) const {
     return result;
 }
 
-std::vector<ExpiryDate> OptionChain::expiries() const {
+std::vector<ExpiryDate> Chain::expiries() const {
     std::vector<ExpiryDate> result;
     result.reserve(levels_.size());
     for (const auto& [exp, strikes] : levels_) result.push_back(exp);
     return result;
 }
 
-std::vector<InstrumentId> OptionChain::expiring_on_or_before(ExpiryDate date) const {
+std::vector<InstrumentId> Chain::expiring_on_or_before(ExpiryDate date) const {
     std::vector<InstrumentId> result;
     for (const auto& [exp, strike_map] : levels_) {
         if (date < exp) break;

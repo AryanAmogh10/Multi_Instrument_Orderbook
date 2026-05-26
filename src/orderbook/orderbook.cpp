@@ -6,13 +6,13 @@ void OrderBook::add_resting(Order* order) {
     if (order->side == Side::Buy) {
         auto& list = bids_[order->limit_price];
         list.push_back(order);
-        index_.emplace(to_underlying(order->id),
-                       Locator{Side::Buy, order->limit_price, order});
+        order_map_.emplace(to_underlying(order->id),
+                           Locator{Side::Buy, order->limit_price, order});
     } else {
         auto& list = asks_[order->limit_price];
         list.push_back(order);
-        index_.emplace(to_underlying(order->id),
-                       Locator{Side::Sell, order->limit_price, order});
+        order_map_.emplace(to_underlying(order->id),
+                           Locator{Side::Sell, order->limit_price, order});
     }
 }
 
@@ -21,11 +21,11 @@ bool OrderBook::cancel(OrderId id) {
 }
 
 Order* OrderBook::cancel_and_get(OrderId id) {
-    auto idx_it = index_.find(to_underlying(id));
-    if (idx_it == index_.end()) return nullptr;
+    auto idx_it = order_map_.find(to_underlying(id));
+    if (idx_it == order_map_.end()) return nullptr;
 
     const Locator loc = idx_it->second;
-    index_.erase(idx_it);
+    order_map_.erase(idx_it);
 
     if (loc.side == Side::Buy) {
         auto level_it = bids_.find(loc.price);
@@ -40,8 +40,8 @@ Order* OrderBook::cancel_and_get(OrderId id) {
 }
 
 Order* OrderBook::find(OrderId id) const {
-    auto idx_it = index_.find(to_underlying(id));
-    return idx_it == index_.end() ? nullptr : idx_it->second.order;
+    auto idx_it = order_map_.find(to_underlying(id));
+    return idx_it == order_map_.end() ? nullptr : idx_it->second.order;
 }
 
 std::optional<Price> OrderBook::best_bid() const noexcept {
@@ -81,13 +81,13 @@ void OrderBook::pop_top(Side side) {
     if (side == Side::Buy) {
         auto level_it = bids_.begin();
         auto& list = level_it->second;
-        index_.erase(to_underlying(list.front()->id));
+        order_map_.erase(to_underlying(list.front()->id));
         list.pop_front();
         if (list.empty()) bids_.erase(level_it);
     } else {
         auto level_it = asks_.begin();
         auto& list = level_it->second;
-        index_.erase(to_underlying(list.front()->id));
+        order_map_.erase(to_underlying(list.front()->id));
         list.pop_front();
         if (list.empty()) asks_.erase(level_it);
     }
@@ -108,7 +108,7 @@ void OrderBook::clear_and_drain(const std::function<void(Order*)>& callback) {
     }
     bids_.clear();
     asks_.clear();
-    index_.clear();
+    order_map_.clear();
 }
 
 }  // namespace velox

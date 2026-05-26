@@ -1,14 +1,14 @@
-#include "velox/matching/expiry_sweeper.hpp"
+#include "velox/matching/sweeper.hpp"
 
 namespace velox {
 
-void ExpirySweeper::register_instrument(InstrumentId id, ExpiryDate expiry) {
+void Sweeper::register_instrument(InstrumentId id, ExpiryDate expiry) {
     auto uid = to_underlying(id);
     id_to_expiry_.emplace(uid, expiry);
     by_expiry_.emplace(expiry, id);
 }
 
-void ExpirySweeper::unregister(InstrumentId id) {
+void Sweeper::unregister(InstrumentId id) {
     auto uid = to_underlying(id);
     auto it = id_to_expiry_.find(uid);
     if (it == id_to_expiry_.end()) return;
@@ -23,7 +23,7 @@ void ExpirySweeper::unregister(InstrumentId id) {
     id_to_expiry_.erase(it);
 }
 
-std::vector<InstrumentId> ExpirySweeper::sweep(ExpiryDate today) {
+std::vector<InstrumentId> Sweeper::sweep(ExpiryDate today) {
     std::vector<InstrumentId> expired;
     auto it = by_expiry_.begin();
     while (it != by_expiry_.end() && !(today < it->first)) {

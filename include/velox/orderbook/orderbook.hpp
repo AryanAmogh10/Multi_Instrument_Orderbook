@@ -10,10 +10,9 @@
 
 namespace velox {
 
-// Intrusive doubly-linked list for orders at a single price level.
-// Uses the level_prev / level_next pointers embedded directly in Order,
-// so there's no separate node allocation per order.
-struct LevelList {
+// Intrusive doubly-linked list for orders at one price level.
+// Uses level_prev/level_next pointers in Order — no extra allocation per node.
+struct PriceLevel {
     Order* head{nullptr};
     Order* tail{nullptr};
 
@@ -36,7 +35,7 @@ struct LevelList {
         o->level_prev = o->level_next = nullptr;
     }
 
-    // O(1) removal anywhere in the list thanks to the intrusive links.
+    // O(1) removal anywhere in the list — intrusive links make this easy
     void erase(Order* o) noexcept {
         if (o->level_prev) o->level_prev->level_next = o->level_next;
         else               head = o->level_next;
@@ -56,17 +55,19 @@ struct LevelList {
     [[nodiscard]] iterator end()   const noexcept { return iterator{nullptr}; }
 };
 
-// Single-instrument order book. Pure state container — matching logic lives in
-// BookMatcher so the two can be tested independently.
+// keep old name working
+using LevelList = PriceLevel;
+
+// Pure state container for a single instrument's resting orders.
+// Matching logic lives in Matcher so the two can be tested independently.
 //
-// OrderPtr is a raw non-owning pointer into an OrderPool slab.
-// The pool caller must keep orders alive for as long as they're in this book.
+// OrderPtr is a raw non-owning pointer into a Pool slab.
 class OrderBook {
 public:
     using OrderPtr  = Order*;
-    using OrderList = LevelList;
-    using BidLevels = std::map<Price, LevelList, std::greater<>>;
-    using AskLevels = std::map<Price, LevelList, std::less<>>;
+    using OrderList = PriceLevel;
+    using BidLevels = std::map<Price, PriceLevel, std::greater<>>;
+    using AskLevels = std::map<Price, PriceLevel, std::less<>>;
 
     explicit OrderBook(InstrumentId id) noexcept : instrument_(id) {}
 
@@ -80,9 +81,7 @@ public:
     void add_resting(Order* order);
     bool cancel(OrderId id);
 
-    // Remove by id and return the pointer — caller is responsible for recycling it.
     [[nodiscard]] Order* cancel_and_get(OrderId id);
-
     [[nodiscard]] Order* find(OrderId id) const;
 
     [[nodiscard]] std::optional<Price> best_bid() const noexcept;
@@ -91,8 +90,8 @@ public:
     [[nodiscard]] Quantity bid_qty_at(Price p) const;
     [[nodiscard]] Quantity ask_qty_at(Price p) const;
 
-    [[nodiscard]] std::size_t order_count() const noexcept { return index_.size(); }
-    [[nodiscard]] bool empty() const noexcept { return index_.empty(); }
+    [[nodiscard]] std::size_t order_count() const noexcept { return order_map_.size(); }
+    [[nodiscard]] bool empty() const noexcept { return order_map_.empty(); }
 
     [[nodiscard]] Order* peek_top(Side side) const;
     void pop_top(Side side);
@@ -100,8 +99,8 @@ public:
     [[nodiscard]] const BidLevels& bids() const noexcept { return bids_; }
     [[nodiscard]] const AskLevels& asks() const noexcept { return asks_; }
 
-    // Visit every resting order via callback, then empty the book.
-    // Used during instrument expiry to recycle all slots back to the pool.
+    // Visit every resting order, then empty the book.
+    // Used when an instrument expires.
     void clear_and_drain(const std::function<void(Order*)>& callback);
 
 private:
@@ -114,7 +113,7 @@ private:
     InstrumentId                                instrument_;
     BidLevels                                   bids_;
     AskLevels                                   asks_;
-    std::unordered_map<std::uint64_t, Locator>  index_;
+    std::unordered_map<std::uint64_t, Locator>  order_map_;
 };
 
 }  // namespace velox

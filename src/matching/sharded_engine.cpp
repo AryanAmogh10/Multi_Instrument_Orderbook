@@ -4,9 +4,9 @@
 
 namespace velox {
 
-ShardedEngine::ShardedEngine(const InstrumentRegistry& registry,
-                             std::size_t num_shards,
-                             std::size_t pool_capacity)
+ShardedMatcher::ShardedMatcher(const InstrumentRegistry& registry,
+                                std::size_t num_shards,
+                                std::size_t pool_capacity)
     : pool_(pool_capacity), registry_(registry) {
     if (num_shards == 0) throw std::invalid_argument{"num_shards must be > 0"};
     if (!registry.frozen()) throw std::logic_error{"registry must be frozen"};
@@ -20,7 +20,7 @@ ShardedEngine::ShardedEngine(const InstrumentRegistry& registry,
         auto filter = [my_shard, num_shards](InstrumentId id) {
             return (to_underlying(id) % num_shards) == my_shard;
         };
-        shards_[i]->engine = std::make_unique<MatchingEngine>(registry_, pool_, filter);
+        shards_[i]->engine = std::make_unique<Engine>(registry_, pool_, filter);
     }
     for (auto& s : shards_) {
         Shard* ptr = s.get();
@@ -28,14 +28,14 @@ ShardedEngine::ShardedEngine(const InstrumentRegistry& registry,
     }
 }
 
-ShardedEngine::~ShardedEngine() {
+ShardedMatcher::~ShardedMatcher() {
     for (auto& s : shards_) s->stop.store(true, std::memory_order_release);
     for (auto& s : shards_) {
         if (s->worker.joinable()) s->worker.join();
     }
 }
 
-void ShardedEngine::run_shard(Shard& shard) {
+void ShardedMatcher::run_shard(Shard& shard) {
     Command cmd;
     while (!shard.stop.load(std::memory_order_acquire)) {
         if (shard.queue.pop(cmd)) {
@@ -52,7 +52,7 @@ void ShardedEngine::run_shard(Shard& shard) {
             std::this_thread::yield();
         }
     }
-    // Drain anything left in the queue before exiting.
+    // drain leftovers before exit
     while (shard.queue.pop(cmd)) {
         if (cmd.kind == Command::Kind::Submit) {
             auto result = shard.engine->submit(cmd.order);
@@ -66,7 +66,7 @@ void ShardedEngine::run_shard(Shard& shard) {
     }
 }
 
-bool ShardedEngine::submit(Order* order) {
+bool ShardedMatcher::submit(Order* order) {
     const std::size_t idx = shard_for(order->instrument);
     Shard& s = *shards_[idx];
     Command cmd{Command::Kind::Submit, order->instrument, order->id, order};
@@ -75,7 +75,7 @@ bool ShardedEngine::submit(Order* order) {
     return true;
 }
 
-bool ShardedEngine::cancel(InstrumentId inst, OrderId id) {
+bool ShardedMatcher::cancel(InstrumentId inst, OrderId id) {
     const std::size_t idx = shard_for(inst);
     Shard& s = *shards_[idx];
     Command cmd{Command::Kind::Cancel, inst, id, nullptr};
@@ -84,7 +84,7 @@ bool ShardedEngine::cancel(InstrumentId inst, OrderId id) {
     return true;
 }
 
-void ShardedEngine::wait_idle() {
+void ShardedMatcher::wait_idle() {
     for (;;) {
         bool all_done = true;
         for (auto& s : shards_) {
@@ -99,7 +99,7 @@ void ShardedEngine::wait_idle() {
     }
 }
 
-const OrderBook* ShardedEngine::book(InstrumentId id) const noexcept {
+const OrderBook* ShardedMatcher::book(InstrumentId id) const noexcept {
     const std::size_t idx = shard_for(id);
     return shards_[idx]->engine->book(id);
 }

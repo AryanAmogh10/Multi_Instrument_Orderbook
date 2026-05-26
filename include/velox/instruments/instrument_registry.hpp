@@ -1,7 +1,7 @@
 #pragma once
 
 #include "velox/instruments/instrument_spec.hpp"
-#include "velox/instruments/option_chain.hpp"
+#include "velox/instruments/chain.hpp"
 
 #include <stdexcept>
 #include <string>
@@ -11,8 +11,8 @@
 
 namespace velox {
 
-// Registry is mutable while building (at startup), then frozen. After freeze()
-// all lookups are safe to call concurrently from any thread.
+// Mutable while building, then freeze() makes it read-only.
+// All lookups after freeze() are safe to call from any thread.
 class InstrumentRegistry {
 public:
     class FrozenError : public std::logic_error {
@@ -32,21 +32,19 @@ public:
     [[nodiscard]] const InstrumentSpec* find(InstrumentId id) const noexcept;
     [[nodiscard]] const InstrumentSpec* find(std::string_view symbol) const noexcept;
 
-    [[nodiscard]] std::size_t size() const noexcept { return specs_.size(); }
-    [[nodiscard]] const std::vector<InstrumentSpec>& all() const noexcept { return specs_; }
+    [[nodiscard]] std::size_t size() const noexcept { return instruments_.size(); }
+    [[nodiscard]] const std::vector<InstrumentSpec>& all() const noexcept { return instruments_; }
 
-    // Option chain queries (Phase 5).
-    // Returns nullptr if no option contracts exist for the given underlying.
-    [[nodiscard]] const OptionChain* option_chain(std::string_view underlying) const noexcept;
+    // Returns nullptr if no options exist for the given underlying.
+    [[nodiscard]] const Chain* option_chain(std::string_view underlying) const noexcept;
 
-    // All underlying symbols that have at least one option contract registered.
     [[nodiscard]] std::vector<std::string> option_underlyings() const;
 
 private:
-    std::vector<InstrumentSpec>                         specs_;
-    std::unordered_map<std::uint32_t, std::size_t>      by_id_;
-    std::unordered_map<std::string, std::size_t>        by_symbol_;
-    std::unordered_map<std::string, OptionChain>        option_chains_;
+    std::vector<InstrumentSpec>                         instruments_;
+    std::unordered_map<std::uint32_t, std::size_t>      id_map_;
+    std::unordered_map<std::string, std::size_t>        sym_map_;
+    std::unordered_map<std::string, Chain>              chains_;
     bool                                                frozen_{false};
 };
 

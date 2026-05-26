@@ -15,7 +15,7 @@ namespace velox::gateway {
 // epoll / io_uring / IOCP — that lands in Phase 4 along with the latency work.
 class Server {
 public:
-    Server(MatchingEngine& engine, std::uint16_t port);
+    Server(Engine& engine, std::uint16_t port);
     ~Server();
 
     Server(const Server&) = delete;
@@ -30,7 +30,7 @@ private:
     void accept_loop();
     void session_loop(tcp::socket_t sock, std::uint64_t session_id);
 
-    MatchingEngine&             engine_;
+    Engine&                     engine_;
     Dispatcher                  dispatcher_;
     std::uint16_t               port_;
     tcp::socket_t               listener_{tcp::kInvalidSocket};

@@ -1,5 +1,5 @@
 #include "velox/gateway/dispatcher.hpp"
-#include "velox/utils/latency_stats.hpp"
+#include "velox/utils/latency.hpp"
 
 namespace velox::gateway {
 
@@ -7,7 +7,7 @@ using namespace velox::protocol;
 
 namespace {
 
-RejectReason classify(OrderStatus s, const NewOrderMsg& m, const MatchingEngine& engine) {
+RejectReason classify(OrderStatus s, const NewOrderMsg& m, const Engine& engine) {
     if (s != OrderStatus::Rejected) return RejectReason::Unknown;
     if (engine.book(InstrumentId{m.instrument_id}) == nullptr) {
         return RejectReason::UnknownInstrument;
@@ -62,15 +62,13 @@ void Dispatcher::handle_new_order(Session& s, const NewOrderMsg& m) {
         return;
     }
 
-    // Borrow a slot from the pre-allocated pool rather than calling new.
     Order* order = engine_.acquire_order();
     if (!order) {
         s.emit(OrderRejectMsg{m.client_order_id, RejectReason::Unknown});
         return;
     }
 
-    // For now the engine-side ID mirrors the client's order ID.
-    // TODO: add server-side sequence numbering for full production use.
+    // TODO: add server-side sequence numbering
     const std::uint64_t server_id = m.client_order_id;
     (void)next_server_order_id_;
 
@@ -117,7 +115,6 @@ void Dispatcher::handle_cancel(Session& s, const CancelOrderMsg& m) {
         s.emit(OrderRejectMsg{m.client_order_id, RejectReason::NotLoggedOn});
         return;
     }
-    // cancel() releases the resting order to the pool internally.
     const bool ok = engine_.cancel(InstrumentId{m.instrument_id},
                                    OrderId{m.client_order_id});
     if (ok) {
