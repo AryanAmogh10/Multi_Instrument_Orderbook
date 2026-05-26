@@ -11,7 +11,7 @@ Built to explore the internals of exchange matching systems — price-time prior
 - **Multi-instrument routing** — one `OrderBook` per instrument, sharded across N worker threads
 - **Options support** — OCC-format contract specifications, per-underlying chains, expiry sweeping
 - **Binary wire protocol** over TCP — logon, new order, cancel, fill, reject messages
-- **Zero heap allocation on the hot path** — pre-allocated `OrderPool` slab + intrusive linked lists
+- **Zero heap allocation on the hot path** — pre-allocated `Pool` slab + intrusive linked lists
 - **Per-order latency tracking** — atomic histogram recording match time from arrival to result
 
 ---
@@ -31,13 +31,13 @@ TCP Clients
                    │
                    ▼
 ┌─────────────────────────────────────┐
-│  ShardedEngine                       │
+│  ShardedMatcher                      │
 │  • N worker threads                  │
 │  • SPSC ring buffer per shard        │
 │  • Consistent hashing by inst. ID    │
 │                                      │
 │  ┌────────────────────────────────┐  │
-│  │  MatchingEngine (per shard)    │  │
+│  │  Engine (per shard)            │  │
 │  │  ├── OrderBook (AAPL)          │  │
 │  │  ├── OrderBook (MSFT)          │  │
 │  │  └── OrderBook (AAPL Jan $150C)│  │
@@ -46,7 +46,7 @@ TCP Clients
                    │
                    ▼
 ┌─────────────────────────────────────┐
-│  OrderPool  •  LatencyStats          │
+│  Pool  •  LatencyTracker             │
 └─────────────────────────────────────┘
 ```
 
@@ -116,11 +116,11 @@ tests/property/
 include/velox/
   core/           – Strong types (Price, Quantity, OrderId, …)
   orderbook/      – Order struct, OrderBook, trade record
-  matching/       – BookMatcher, MatchingEngine, ShardedEngine, ExpirySweeper
-  instruments/    – InstrumentSpec, InstrumentRegistry, OptionContract, OptionChain
+  matching/       – Matcher, Engine, ShardedMatcher, Sweeper
+  instruments/    – InstrumentSpec, InstrumentRegistry, Contract, Chain
   protocol/       – Binary codec, framer, session state machine
   gateway/        – Dispatcher, TCP server/client
-  utils/          – OrderPool, LatencyStats, SPSC ring buffer
+  utils/          – Pool, LatencyTracker, SPSC ring buffer
 
 src/              – Implementations
 tests/            – GoogleTest suites
@@ -139,11 +139,11 @@ docs/             – Architecture, protocol spec, benchmark notes
 
 **Intrusive linked list for price levels** — `level_prev` / `level_next` pointers are embedded directly in `Order`. No separate node allocation per order, better cache locality when walking a level.
 
-**Pre-allocated order pool** — `OrderPool` is a fixed slab allocated at startup. `acquire()` and `release()` are the only allocations on the matching path, and they're mutex-protected but happen outside the inner match loop.
+**Pre-allocated order pool** — `Pool` is a fixed slab allocated at startup. `acquire()` and `release()` are the only allocations on the matching path, and they're mutex-protected but happen outside the inner match loop.
 
 **SPSC queues between threads** — each shard has a wait-free ring buffer for inbound commands. The matching loop itself is single-threaded per instrument, so no locks inside matching.
 
-**Options as first-class instruments** — options are just `InstrumentType::Option` entries in the `InstrumentRegistry`. Each gets a normal `OrderBook`. The `OptionChain` is an index layer on top for chain queries; `ExpirySweeper` handles end-of-day cleanup.
+**Options as first-class instruments** — options are just `InstrumentType::Option` entries in the `InstrumentRegistry`. Each gets a normal `OrderBook`. The `Chain` is an index layer on top for chain queries; `Sweeper` handles end-of-day cleanup.
 
 ---
 
