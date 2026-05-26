@@ -9,7 +9,7 @@ function(velox_set_warnings target)
             -Wall -Wextra -Wpedantic -Werror
             -Wshadow -Wnon-virtual-dtor -Wcast-align
             -Wunused -Woverloaded-virtual -Wconversion
-            -Wsign-conversion -Wdouble-promotion -Wformat=2
+            -Wsign-conversion -Wformat=2
             -Wnull-dereference -Wold-style-cast
         )
     endif()
