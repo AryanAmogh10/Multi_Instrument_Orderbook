@@ -38,6 +38,10 @@ public:
     // Cancel a resting order.  On success the order is released to the pool.
     bool cancel(OrderId id);
 
+    // Phase 5: cancel every resting order in the book and release them to the
+    // pool.  Used by MatchingEngine::expire_instrument().
+    void cancel_all();
+
     [[nodiscard]] const OrderBook& book() const noexcept { return book_; }
 
     // Phase 4 §4.5: cumulative latency statistics for this book.

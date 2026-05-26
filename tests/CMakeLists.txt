@@ -10,8 +10,12 @@ add_executable(velox_unit_tests
     unit/codec_test.cpp
     unit/framer_test.cpp
     unit/dispatcher_test.cpp
+    unit/option_contract_test.cpp
+    unit/option_chain_test.cpp
+    unit/expiry_sweeper_test.cpp
     integration/sharded_engine_test.cpp
     integration/gateway_e2e_test.cpp
+    integration/options_e2e_test.cpp
     property/invariants_test.cpp
 )
 target_link_libraries(velox_unit_tests PRIVATE velox_core GTest::gtest_main)

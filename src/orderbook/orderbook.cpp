@@ -93,4 +93,22 @@ void OrderBook::pop_top(Side side) {
     }
 }
 
+void OrderBook::clear_and_drain(const std::function<void(Order*)>& callback) {
+    for (auto& [price, list] : bids_) {
+        for (Order* o : list) {
+            o->level_prev = o->level_next = nullptr;
+            callback(o);
+        }
+    }
+    for (auto& [price, list] : asks_) {
+        for (Order* o : list) {
+            o->level_prev = o->level_next = nullptr;
+            callback(o);
+        }
+    }
+    bids_.clear();
+    asks_.clear();
+    index_.clear();
+}
+
 }  // namespace velox

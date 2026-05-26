@@ -26,9 +26,12 @@ include(FetchContent)
 add_library(velox_core
     src/orderbook/orderbook.cpp
     src/instruments/instrument_registry.cpp
+    src/instruments/option_contract.cpp
+    src/instruments/option_chain.cpp
     src/matching/book_matcher.cpp
     src/matching/matching_engine.cpp
     src/matching/sharded_engine.cpp
+    src/matching/expiry_sweeper.cpp
     src/protocol/codec.cpp
     src/protocol/framer.cpp
     src/protocol/session.cpp

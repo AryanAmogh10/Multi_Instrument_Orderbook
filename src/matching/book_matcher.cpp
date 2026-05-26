@@ -114,4 +114,11 @@ bool BookMatcher::cancel(OrderId id) {
     return true;
 }
 
+void BookMatcher::cancel_all() {
+    book_.clear_and_drain([this](Order* o) {
+        o->status = OrderStatus::Cancelled;
+        pool_.release(o);
+    });
+}
+
 }  // namespace velox

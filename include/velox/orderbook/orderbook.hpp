@@ -115,6 +115,10 @@ public:
     [[nodiscard]] const BidLevels& bids() const noexcept { return bids_; }
     [[nodiscard]] const AskLevels& asks() const noexcept { return asks_; }
 
+    // Phase 5: visit every resting order via `callback`, then clear the book.
+    // Used by BookMatcher::cancel_all() during instrument expiry.
+    void clear_and_drain(const std::function<void(Order*)>& callback);
+
 private:
     struct Locator {
         Side   side;

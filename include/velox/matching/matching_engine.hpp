@@ -38,6 +38,11 @@ public:
     SubmitResult submit(Order* order);
     bool cancel(InstrumentId instrument, OrderId id);
 
+    // Phase 5: cancel all resting orders for `id` and remove the instrument
+    // from active trading.  Returns false if the instrument is not managed by
+    // this engine.
+    bool expire_instrument(InstrumentId id);
+
     [[nodiscard]] const OrderBook* book(InstrumentId id) const noexcept;
     [[nodiscard]] OrderBook*       book(InstrumentId id) noexcept;
     [[nodiscard]] std::size_t      book_count() const noexcept { return books_.size(); }

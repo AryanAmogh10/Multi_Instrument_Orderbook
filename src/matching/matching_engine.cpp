@@ -45,6 +45,15 @@ OrderBook* MatchingEngine::book(InstrumentId id) noexcept {
     return it == books_.end() ? nullptr : it->second;
 }
 
+bool MatchingEngine::expire_instrument(InstrumentId id) {
+    auto it = slots_.find(to_underlying(id));
+    if (it == slots_.end()) return false;
+    it->second.matcher->cancel_all();
+    books_.erase(to_underlying(id));
+    slots_.erase(it);
+    return true;
+}
+
 LatencyStats::Snapshot MatchingEngine::latency_snapshot() const noexcept {
     // Aggregate all per-book stats into one combined snapshot.
     LatencyStats::Snapshot combined{};
