@@ -5,13 +5,17 @@
 using namespace velox;
 
 namespace {
+
 Order make_order(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty) {
+    // Phase 4 field order: id, limit_price, initial_qty, filled_qty,
+    //                      instrument, client, status, side, type, tif, ts
     return Order{
-        OrderId{id}, InstrumentId{1}, ClientId{1}, side,
-        OrderType::Limit, TimeInForce::GTC,
-        Price{price}, Quantity{qty}, kZeroQty, Timestamp{0}, OrderStatus::New,
+        OrderId{id}, Price{price}, Quantity{qty}, kZeroQty,
+        InstrumentId{1}, ClientId{1}, OrderStatus::New,
+        side, OrderType::Limit, TimeInForce::GTC, Timestamp{0},
     };
 }
+
 }  // namespace
 
 TEST(OrderModel, RemainingWhenUnfilled) {

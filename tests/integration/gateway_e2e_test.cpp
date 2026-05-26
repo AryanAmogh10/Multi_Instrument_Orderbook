@@ -2,6 +2,7 @@
 
 #include "velox/gateway/client.hpp"
 #include "velox/gateway/server.hpp"
+#include "velox/utils/order_pool.hpp"
 
 #include <chrono>
 #include <thread>
@@ -10,6 +11,10 @@ using namespace velox;
 using namespace velox::protocol;
 
 namespace {
+
+// Pool shared across all e2e tests. The Server/Dispatcher acquires from this
+// pool on the session thread and releases terminal orders after each order.
+OrderPool g_pool{1024};
 
 InstrumentRegistry make_registry() {
     InstrumentRegistry r;
@@ -25,10 +30,9 @@ constexpr std::uint16_t kPort = 47811;
 
 TEST(GatewayE2E, LogonNewOrderFillRoundTrip) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Server server{engine, kPort};
     server.start();
-    // Give the accept thread a moment to bind.
     std::this_thread::sleep_for(std::chrono::milliseconds{50});
 
     gateway::Client client{"127.0.0.1", kPort};
@@ -63,7 +67,7 @@ TEST(GatewayE2E, LogonNewOrderFillRoundTrip) {
 
 TEST(GatewayE2E, CancelRoundTrip) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Server server{engine, static_cast<std::uint16_t>(kPort + 1)};
     server.start();
     std::this_thread::sleep_for(std::chrono::milliseconds{50});
@@ -86,7 +90,7 @@ TEST(GatewayE2E, CancelRoundTrip) {
 
 TEST(GatewayE2E, OrderBeforeLogonRejected) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Server server{engine, static_cast<std::uint16_t>(kPort + 2)};
     server.start();
     std::this_thread::sleep_for(std::chrono::milliseconds{50});

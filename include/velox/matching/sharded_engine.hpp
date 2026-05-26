@@ -3,6 +3,7 @@
 #include "velox/instruments/instrument_registry.hpp"
 #include "velox/matching/matching_engine.hpp"
 #include "velox/orderbook/orderbook.hpp"
+#include "velox/utils/order_pool.hpp"
 #include "velox/utils/spsc_ring_buffer.hpp"
 
 #include <atomic>
@@ -16,32 +17,38 @@ namespace velox {
 // Sharded matching engine — N worker threads, each owns a disjoint subset of
 // instruments selected by consistent hashing (instrument_id % N).
 //
-// Per-shard ingestion uses an SPSC lock-free queue. Phase 2 assumes a single
-// producer thread for all submit()/cancel() calls; multi-producer dispatch
-// arrives with the gateway in Phase 3.
+// Phase 4: owns a single OrderPool shared across all shards.  Callers must use
+// acquire_order() to obtain an Order* before calling submit(); the shard worker
+// releases terminal takers automatically.  Fully-filled makers are released
+// inside BookMatcher::match().
 class ShardedEngine {
 public:
-    static constexpr std::size_t kQueueCapacity = 4096;
+    static constexpr std::size_t kQueueCapacity   = 4096;
+    static constexpr std::size_t kDefaultPoolSize  = 65'536;
 
     struct Command {
         enum class Kind : std::uint8_t { Submit, Cancel } kind;
-        InstrumentId         instrument;
-        OrderId              order_id;       // Cancel
-        OrderBook::OrderPtr  order;          // Submit
+        InstrumentId  instrument;
+        OrderId       order_id;     // Cancel
+        Order*        order;        // Submit (non-owning pointer into pool)
     };
 
-    ShardedEngine(const InstrumentRegistry& registry, std::size_t num_shards);
+    ShardedEngine(const InstrumentRegistry& registry,
+                  std::size_t num_shards,
+                  std::size_t pool_capacity = kDefaultPoolSize);
     ~ShardedEngine();
 
     ShardedEngine(const ShardedEngine&) = delete;
     ShardedEngine& operator=(const ShardedEngine&) = delete;
 
-    bool submit(OrderBook::OrderPtr order);
+    // Acquire a zeroed Order from the shared pool before filling and submitting.
+    [[nodiscard]] Order* acquire_order() noexcept { return pool_.acquire(); }
+
+    bool submit(Order* order);
     bool cancel(InstrumentId inst, OrderId id);
 
-    // Block until every previously enqueued command has been processed and
-    // all shard queues are empty. Safe only when no concurrent producer is
-    // still enqueuing.
+    // Block until every previously enqueued command has been processed.
+    // Safe only when no concurrent producer is still enqueuing.
     void wait_idle();
 
     [[nodiscard]] std::size_t num_shards() const noexcept { return shards_.size(); }
@@ -49,7 +56,7 @@ public:
         return to_underlying(id) % shards_.size();
     }
 
-    // Safe to call only after wait_idle() and with no concurrent producer.
+    // Safe to call only after wait_idle() with no concurrent producer.
     [[nodiscard]] const OrderBook* book(InstrumentId id) const noexcept;
 
 private:
@@ -62,8 +69,9 @@ private:
         std::thread                              worker;
     };
 
-    static void run_shard(Shard& shard);
+    void run_shard(Shard& shard);
 
+    OrderPool                            pool_;    // shared across all shards
     std::vector<std::unique_ptr<Shard>>  shards_;
     const InstrumentRegistry&            registry_;
 };

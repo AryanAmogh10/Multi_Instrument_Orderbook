@@ -1,4 +1,5 @@
 #include "velox/gateway/dispatcher.hpp"
+#include "velox/utils/latency_stats.hpp"
 
 namespace velox::gateway {
 
@@ -35,7 +36,6 @@ void Dispatcher::pump(Session& session) {
             } else if constexpr (std::is_same_v<T, CancelOrderMsg>) {
                 handle_cancel(session, body);
             }
-            // Outbound-only message types arriving inbound are silently dropped.
         }, msg->body);
     }
 }
@@ -44,7 +44,7 @@ void Dispatcher::handle_logon(Session& s, const LogonMsg& m) {
     if (s.state() != Session::State::NotLoggedOn) return;
     s.set_client(m.client_id);
     s.set_state(Session::State::Active);
-    s.emit(LogonMsg{m.client_id});  // echo accepts logon
+    s.emit(LogonMsg{m.client_id});
 }
 
 void Dispatcher::handle_logout(Session& s) {
@@ -62,40 +62,56 @@ void Dispatcher::handle_new_order(Session& s, const NewOrderMsg& m) {
         return;
     }
 
-    // Phase 3: use client_order_id as the engine's OrderId. Server-side
-    // renumbering is left for later phases (real exchanges do remap).
+    // Phase 4: acquire Order from pool (zero heap allocation on hot path).
+    Order* order = engine_.acquire_order();
+    if (!order) {
+        // Pool exhausted — treat as transient reject.
+        s.emit(OrderRejectMsg{m.client_order_id, RejectReason::Unknown});
+        return;
+    }
+
+    // Phase 3: use client_order_id as the engine's OrderId.
+    // Server-side renumbering arrives with the result router in Phase 4+.
     const std::uint64_t server_id = m.client_order_id;
     (void)next_server_order_id_;
-    auto order = std::make_shared<Order>(Order{
+
+    *order = Order{
         OrderId{server_id},
-        InstrumentId{m.instrument_id},
-        ClientId{s.client_id()},
-        static_cast<Side>(m.side),
-        static_cast<OrderType>(m.order_type),
-        static_cast<TimeInForce>(m.tif),
         Price{m.price},
         Quantity{m.quantity},
         kZeroQty,
-        Timestamp{0},
+        InstrumentId{m.instrument_id},
+        ClientId{s.client_id()},
         OrderStatus::New,
-    });
+        static_cast<Side>(m.side),
+        static_cast<OrderType>(m.order_type),
+        static_cast<TimeInForce>(m.tif),
+        Timestamp{0},
+        Timestamp{static_cast<std::int64_t>(now_ns())},  // Phase 4 §4.5: enqueue timestamp
+    };
 
     auto result = engine_.submit(order);
 
     if (result.order->status == OrderStatus::Rejected) {
-        s.emit(OrderRejectMsg{m.client_order_id, classify(OrderStatus::Rejected, m, engine_)});
-        return;
+        s.emit(OrderRejectMsg{m.client_order_id,
+                              classify(OrderStatus::Rejected, m, engine_)});
+    } else {
+        s.emit(OrderAckMsg{m.client_order_id, server_id});
+        for (const auto& t : result.trades) {
+            s.emit(FillMsg{
+                m.client_order_id,
+                server_id,
+                to_underlying(t.price),
+                to_underlying(t.quantity),
+                static_cast<std::uint8_t>(result.order->status),
+            });
+        }
     }
 
-    s.emit(OrderAckMsg{m.client_order_id, server_id});
-    for (const auto& t : result.trades) {
-        s.emit(FillMsg{
-            m.client_order_id,
-            server_id,
-            to_underlying(t.price),
-            to_underlying(t.quantity),
-            static_cast<std::uint8_t>(result.order->status),
-        });
+    // Phase 4: release terminal taker orders back to the pool.  Resting
+    // orders (status New / PartiallyFilled in book) must NOT be released here.
+    if (result.order->is_terminal()) {
+        engine_.release_order(result.order);
     }
 }
 
@@ -104,7 +120,9 @@ void Dispatcher::handle_cancel(Session& s, const CancelOrderMsg& m) {
         s.emit(OrderRejectMsg{m.client_order_id, RejectReason::NotLoggedOn});
         return;
     }
-    const bool ok = engine_.cancel(InstrumentId{m.instrument_id}, OrderId{m.client_order_id});
+    // BookMatcher::cancel() releases the resting order to the pool internally.
+    const bool ok = engine_.cancel(InstrumentId{m.instrument_id},
+                                   OrderId{m.client_order_id});
     if (ok) {
         s.emit(CancelledMsg{m.client_order_id});
     } else {

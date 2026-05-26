@@ -1,8 +1,9 @@
 #include <gtest/gtest.h>
 
 #include "velox/orderbook/orderbook.hpp"
+#include "velox/utils/order_pool.hpp"
 
-#include <memory>
+#include <cassert>
 
 using namespace velox;
 
@@ -10,12 +11,18 @@ namespace {
 
 constexpr InstrumentId kInst{1};
 
-std::shared_ptr<Order> mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty) {
-    return std::make_shared<Order>(Order{
-        OrderId{id}, kInst, ClientId{1}, side,
-        OrderType::Limit, TimeInForce::GTC,
-        Price{price}, Quantity{qty}, kZeroQty, Timestamp{0}, OrderStatus::New,
-    });
+// Pool shared across all tests in this file. 256 slots is more than enough.
+OrderPool g_pool{256};
+
+Order* mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty) {
+    Order* o = g_pool.acquire_or_abort();
+    assert(o && "orderbook test pool exhausted — increase g_pool size");
+    *o = Order{
+        OrderId{id}, Price{price}, Quantity{qty}, kZeroQty,
+        kInst, ClientId{1}, OrderStatus::New, side,
+        OrderType::Limit, TimeInForce::GTC, Timestamp{0},
+    };
+    return o;
 }
 
 }  // namespace
@@ -75,9 +82,9 @@ TEST(OrderBook, QtyAtMissingLevelIsZero) {
 
 TEST(OrderBook, FindReturnsSameObject) {
     OrderBook ob{kInst};
-    auto o = mk(42, Side::Buy, 100, 5);
+    Order* o = mk(42, Side::Buy, 100, 5);
     ob.add_resting(o);
-    EXPECT_EQ(ob.find(OrderId{42}).get(), o.get());
+    EXPECT_EQ(ob.find(OrderId{42}), o);  // both are Order*
 }
 
 TEST(OrderBook, FindMissingReturnsNull) {

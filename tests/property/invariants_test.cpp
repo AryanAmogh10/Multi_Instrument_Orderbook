@@ -10,7 +10,9 @@
 #include <gtest/gtest.h>
 
 #include "velox/matching/book_matcher.hpp"
+#include "velox/utils/order_pool.hpp"
 
+#include <cassert>
 #include <random>
 #include <unordered_map>
 
@@ -20,13 +22,19 @@ namespace {
 
 constexpr InstrumentId kInst{1};
 
-OrderBook::OrderPtr mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty,
-                      TimeInForce tif) {
-    return std::make_shared<Order>(Order{
-        OrderId{id}, kInst, ClientId{1}, side,
-        OrderType::Limit, tif,
-        Price{price}, Quantity{qty}, kZeroQty, Timestamp{0}, OrderStatus::New,
-    });
+// Large pool: property tests submit up to 5000 orders without releasing.
+OrderPool g_pool{8192};
+
+Order* mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty,
+          TimeInForce tif) {
+    Order* o = g_pool.acquire_or_abort();
+    assert(o && "invariants test pool exhausted — increase g_pool size");
+    *o = Order{
+        OrderId{id}, Price{price}, Quantity{qty}, kZeroQty,
+        kInst, ClientId{1}, OrderStatus::New, side,
+        OrderType::Limit, tif, Timestamp{0},
+    };
+    return o;
 }
 
 struct Counts {
@@ -37,14 +45,14 @@ Counts walk_levels(const OrderBook& ob) {
     Counts c;
     for (const auto& [p, list] : ob.bids()) {
         (void)p;
-        for (const auto& o : list) {
+        for (Order* o : list) {
             EXPECT_EQ(o->side, Side::Buy);
             ++c.orders;
         }
     }
     for (const auto& [p, list] : ob.asks()) {
         (void)p;
-        for (const auto& o : list) {
+        for (Order* o : list) {
             EXPECT_EQ(o->side, Side::Sell);
             ++c.orders;
         }
@@ -65,7 +73,7 @@ void check_invariants(const OrderBook& ob) {
 
 TEST(Property, RandomLimitSequenceMaintainsInvariants) {
     OrderBook ob{kInst};
-    BookMatcher me{ob};
+    BookMatcher me{ob, g_pool};
 
     std::mt19937_64 rng{0xC0FFEEULL};
     std::uniform_int_distribution<int> side_d(0, 1);
@@ -107,15 +115,13 @@ TEST(Property, RandomLimitSequenceMaintainsInvariants) {
         check_invariants(ob);
     }
 
-    // Conservation: every unit traded was matched against equal taker + maker qty.
-    // We can't bound this exactly without tracking each order, but traded qty
-    // must not exceed total submitted qty.
+    // Conservation: traded qty must not exceed total submitted qty.
     EXPECT_LE(total_traded, total_submitted_qty);
 }
 
 TEST(Property, FOKNeverPartiallyExecutes) {
     OrderBook ob{kInst};
-    BookMatcher me{ob};
+    BookMatcher me{ob, g_pool};
 
     std::mt19937_64 rng{42};
     std::uniform_int_distribution<int> side_d(0, 1);
@@ -127,23 +133,22 @@ TEST(Property, FOKNeverPartiallyExecutes) {
     // Seed book with some GTC liquidity.
     for (int i = 0; i < 50; ++i) {
         const Side s = side_d(rng) ? Side::Buy : Side::Sell;
-        me.submit(mk(next_id++, s, price_d(rng), static_cast<std::uint64_t>(qty_d(rng)),
-                     TimeInForce::GTC));
+        me.submit(mk(next_id++, s, price_d(rng),
+                     static_cast<std::uint64_t>(qty_d(rng)), TimeInForce::GTC));
     }
 
     // Now hammer with FOKs.
     for (int i = 0; i < 500; ++i) {
-        const auto before_bid_count = ob.order_count();
+        const auto before_count = ob.order_count();
         const Side s = side_d(rng) ? Side::Buy : Side::Sell;
-        auto fok = mk(next_id++, s, price_d(rng), static_cast<std::uint64_t>(qty_d(rng)),
-                      TimeInForce::FOK);
+        auto fok = mk(next_id++, s, price_d(rng),
+                      static_cast<std::uint64_t>(qty_d(rng)), TimeInForce::FOK);
         const std::uint64_t want = to_underlying(fok->initial_qty);
         auto res = me.submit(fok);
 
         if (res.order->status == OrderStatus::Rejected) {
             EXPECT_TRUE(res.trades.empty());
-            // Book size only constrained: FOK reject must not have rested anything new.
-            EXPECT_LE(ob.order_count(), before_bid_count);
+            EXPECT_LE(ob.order_count(), before_count);
         } else {
             EXPECT_EQ(res.order->status, OrderStatus::Filled);
             std::uint64_t got = 0;

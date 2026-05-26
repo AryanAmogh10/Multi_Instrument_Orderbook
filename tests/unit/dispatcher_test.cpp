@@ -4,11 +4,15 @@
 #include <gtest/gtest.h>
 
 #include "velox/gateway/dispatcher.hpp"
+#include "velox/utils/order_pool.hpp"
 
 using namespace velox;
 using namespace velox::protocol;
 
 namespace {
+
+// Pool shared across all tests in this file.
+OrderPool g_pool{256};
 
 InstrumentRegistry make_registry() {
     InstrumentRegistry r;
@@ -38,7 +42,7 @@ std::vector<DecodedMessage> drain(Session& s) {
 
 TEST(Dispatcher, NewOrderBeforeLogonRejected) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Dispatcher d{engine};
     Session s{1};
 
@@ -54,7 +58,7 @@ TEST(Dispatcher, NewOrderBeforeLogonRejected) {
 
 TEST(Dispatcher, LogonActivatesSession) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Dispatcher d{engine};
     Session s{1};
 
@@ -69,7 +73,7 @@ TEST(Dispatcher, LogonActivatesSession) {
 
 TEST(Dispatcher, NewOrderRestsAndAcks) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Dispatcher d{engine};
     Session s{1};
 
@@ -85,7 +89,7 @@ TEST(Dispatcher, NewOrderRestsAndAcks) {
 
 TEST(Dispatcher, CrossingOrderEmitsFill) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Dispatcher d{engine};
     Session s{1};
 
@@ -106,7 +110,7 @@ TEST(Dispatcher, CrossingOrderEmitsFill) {
 
 TEST(Dispatcher, CancelRemovesRestingOrder) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Dispatcher d{engine};
     Session s{1};
 
@@ -126,7 +130,7 @@ TEST(Dispatcher, CancelRemovesRestingOrder) {
 
 TEST(Dispatcher, UnknownInstrumentRejected) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Dispatcher d{engine};
     Session s{1};
 
@@ -142,7 +146,7 @@ TEST(Dispatcher, UnknownInstrumentRejected) {
 
 TEST(Dispatcher, LogoutTransitionsToClosing) {
     auto reg = make_registry();
-    MatchingEngine engine{reg};
+    MatchingEngine engine{reg, g_pool};
     gateway::Dispatcher d{engine};
     Session s{1};
 
