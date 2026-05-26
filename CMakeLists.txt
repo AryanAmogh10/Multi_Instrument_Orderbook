@@ -63,6 +63,16 @@ if(VELOX_BUILD_TESTS)
     )
     set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
     FetchContent_MakeAvailable(googletest)
+    # mark gtest headers as system so our strict warnings don't apply inside them
+    foreach(_t gtest gtest_main gmock gmock_main)
+        if(TARGET ${_t})
+            get_target_property(_inc ${_t} INTERFACE_INCLUDE_DIRECTORIES)
+            if(_inc)
+                set_target_properties(${_t} PROPERTIES
+                    INTERFACE_SYSTEM_INCLUDE_DIRECTORIES "${_inc}")
+            endif()
+        endif()
+    endforeach()
     add_subdirectory(tests)
 endif()
 
