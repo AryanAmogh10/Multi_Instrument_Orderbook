@@ -10,41 +10,38 @@
 namespace velox {
 
 struct SubmitResult {
-    Order*             order{nullptr};  // the submitted (taker) order — always valid
+    Order*             order{nullptr};  // the taker — always non-null
     std::vector<Trade> trades;
 };
 
-// Matches orders against a single OrderBook.
+// Matches incoming orders against a single OrderBook.
 //
-// Phase 4: receives a reference to the OrderPool so it can release Orders
-// back to the pool when they are fully consumed:
-//   • Fully-filled makers are released inside match().
-//   • Cancelled resting orders are released inside cancel().
-//   • Rejected / IOC-cancelled takers are returned to the caller via
-//     SubmitResult so the caller can read the status before releasing.
+// Memory management contract:
+//   - Fully-filled makers are released to the pool inside match().
+//   - Cancelled resting orders are released inside cancel().
+//   - Terminal takers are returned to the caller via SubmitResult;
+//     the caller must release them after reading the result fields.
 //
-// Supported order types (same as Phase 3):
-//   OrderType::Limit  with TIF: GTC, IOC, FOK, Day (Day == GTC at this phase)
-//   OrderType::Market with TIF: IOC / FOK
+// Supported order types:
+//   Limit  (GTC, IOC, FOK, Day)
+//   Market (IOC, FOK)
 class BookMatcher {
 public:
     explicit BookMatcher(OrderBook& book, OrderPool& pool) noexcept
         : book_(book), pool_(pool) {}
 
-    // Submit a taker order.  The caller is responsible for releasing the
-    // returned order back to the pool if result.order->is_terminal().
+    // Submit a taker order. The caller owns the returned order and must
+    // release it to the pool if result.order->is_terminal().
     SubmitResult submit(Order* order);
 
-    // Cancel a resting order.  On success the order is released to the pool.
+    // Cancel a resting order and return the slot to the pool.
     bool cancel(OrderId id);
 
-    // Phase 5: cancel every resting order in the book and release them to the
-    // pool.  Used by MatchingEngine::expire_instrument().
+    // Cancel every resting order in the book and recycle all slots.
+    // Called by MatchingEngine::expire_instrument().
     void cancel_all();
 
     [[nodiscard]] const OrderBook& book() const noexcept { return book_; }
-
-    // Phase 4 §4.5: cumulative latency statistics for this book.
     [[nodiscard]] const LatencyStats& latency_stats() const noexcept { return stats_; }
 
 private:

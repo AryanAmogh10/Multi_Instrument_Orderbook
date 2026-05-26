@@ -62,16 +62,15 @@ void Dispatcher::handle_new_order(Session& s, const NewOrderMsg& m) {
         return;
     }
 
-    // Phase 4: acquire Order from pool (zero heap allocation on hot path).
+    // Borrow a slot from the pre-allocated pool rather than calling new.
     Order* order = engine_.acquire_order();
     if (!order) {
-        // Pool exhausted — treat as transient reject.
         s.emit(OrderRejectMsg{m.client_order_id, RejectReason::Unknown});
         return;
     }
 
-    // Phase 3: use client_order_id as the engine's OrderId.
-    // Server-side renumbering arrives with the result router in Phase 4+.
+    // For now the engine-side ID mirrors the client's order ID.
+    // TODO: add server-side sequence numbering for full production use.
     const std::uint64_t server_id = m.client_order_id;
     (void)next_server_order_id_;
 
@@ -87,7 +86,7 @@ void Dispatcher::handle_new_order(Session& s, const NewOrderMsg& m) {
         static_cast<OrderType>(m.order_type),
         static_cast<TimeInForce>(m.tif),
         Timestamp{0},
-        Timestamp{static_cast<std::int64_t>(now_ns())},  // Phase 4 §4.5: enqueue timestamp
+        Timestamp{static_cast<std::int64_t>(now_ns())},
     };
 
     auto result = engine_.submit(order);
@@ -108,8 +107,6 @@ void Dispatcher::handle_new_order(Session& s, const NewOrderMsg& m) {
         }
     }
 
-    // Phase 4: release terminal taker orders back to the pool.  Resting
-    // orders (status New / PartiallyFilled in book) must NOT be released here.
     if (result.order->is_terminal()) {
         engine_.release_order(result.order);
     }
@@ -120,7 +117,7 @@ void Dispatcher::handle_cancel(Session& s, const CancelOrderMsg& m) {
         s.emit(OrderRejectMsg{m.client_order_id, RejectReason::NotLoggedOn});
         return;
     }
-    // BookMatcher::cancel() releases the resting order to the pool internally.
+    // cancel() releases the resting order to the pool internally.
     const bool ok = engine_.cancel(InstrumentId{m.instrument_id},
                                    OrderId{m.client_order_id});
     if (ok) {

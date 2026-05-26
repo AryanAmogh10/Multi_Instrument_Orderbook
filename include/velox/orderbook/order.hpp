@@ -4,17 +4,11 @@
 
 namespace velox {
 
-// Phase 4 §4.3: fields reordered for cache locality — matching-critical data
-// (id, price, qty, status, side) grouped in the first ~48 bytes so a single
-// cache-line fetch covers the full hot path.
-//
-// Phase 4 §4.3: intrusive doubly-linked list pointers (level_prev/level_next)
-// replace the separate std::list<OrderPtr> node allocation.  Pointers are
-// nullptr when the order is not resting in a book.
+// Core order record. Fields are ordered so the hot matching data
+// (id, price, qty, status, side) sits in the first cache line.
 struct Order {
-    // ── hot fields ────────────────────────────────────────────────────────────
     OrderId       id{};
-    Price         limit_price{};    // ignored when type == Market
+    Price         limit_price{};    // ignored for market orders
     Quantity      initial_qty{};
     Quantity      filled_qty{kZeroQty};
     InstrumentId  instrument{};
@@ -24,21 +18,15 @@ struct Order {
     OrderType     type{};
     TimeInForce   tif{};
 
-    // ── metadata ──────────────────────────────────────────────────────────────
     Timestamp     ts{};
+    Timestamp     enqueue_ns{};         // stamped by the gateway on arrival
+    Timestamp     match_complete_ns{};  // stamped by the matcher on completion
 
-    // Phase 4 §4.5: latency timestamps (nanoseconds, steady_clock).
-    // enqueue_ns   — set by Dispatcher when order enters the engine.
-    // match_complete_ns — set by BookMatcher when the result is ready.
-    Timestamp     enqueue_ns{};
-    Timestamp     match_complete_ns{};
-
-    // ── intrusive list links (Phase 4 §4.3) ───────────────────────────────────
-    // In use only while resting inside an OrderBook price level.
+    // Intrusive doubly-linked list pointers used while the order sits in a
+    // price level inside an OrderBook. Null when not resting.
     Order*        level_prev{nullptr};
     Order*        level_next{nullptr};
 
-    // ── helpers ───────────────────────────────────────────────────────────────
     [[nodiscard]] constexpr Quantity remaining() const noexcept {
         return initial_qty - filled_qty;
     }

@@ -10,15 +10,13 @@
 
 namespace velox {
 
-// Orchestrator: owns one OrderBook + one BookMatcher per registered instrument,
-// routes incoming orders by InstrumentId. Single-threaded (not thread-safe);
-// concurrency comes from ShardedEngine which composes one of these per shard.
+// Owns one OrderBook + BookMatcher per registered instrument and routes
+// incoming orders to the right book by InstrumentId.
 //
-// Phase 4: takes an external OrderPool reference.  The pool is shared with the
-// caller (e.g. Dispatcher) so orders can be acquired before submit() and
-// released after terminal results are processed.
+// Single-threaded — concurrency is handled by ShardedEngine which runs one
+// instance of this per worker thread, each owning a disjoint set of instruments.
 //
-// Registry must be frozen before MatchingEngine is constructed.
+// The registry must be frozen before this class is constructed.
 class MatchingEngine {
 public:
     using InstrumentFilter = std::function<bool(InstrumentId)>;
@@ -27,20 +25,17 @@ public:
                             OrderPool& pool,
                             InstrumentFilter filter = {});
 
-    // Phase 4: acquire a zeroed Order slot from the shared pool.
-    // Returns nullptr if the pool is exhausted.
+    // Borrow an Order slot from the shared pool. Returns nullptr if full.
     [[nodiscard]] Order* acquire_order() noexcept { return pool_.acquire(); }
 
-    // Release a terminal taker Order back to the pool after the caller has
-    // finished reading its fields (status, fills, etc.).
+    // Return a terminal taker Order to the pool after reading its result fields.
     void release_order(Order* o) noexcept { pool_.release(o); }
 
     SubmitResult submit(Order* order);
     bool cancel(InstrumentId instrument, OrderId id);
 
-    // Phase 5: cancel all resting orders for `id` and remove the instrument
-    // from active trading.  Returns false if the instrument is not managed by
-    // this engine.
+    // Cancel all resting orders and remove the instrument from active trading.
+    // Returns false if the instrument isn't managed by this engine.
     bool expire_instrument(InstrumentId id);
 
     [[nodiscard]] const OrderBook* book(InstrumentId id) const noexcept;
@@ -48,7 +43,6 @@ public:
     [[nodiscard]] std::size_t      book_count() const noexcept { return books_.size(); }
     [[nodiscard]] const InstrumentRegistry& registry() const noexcept { return registry_; }
 
-    // Aggregate latency statistics across all instruments.
     LatencyStats::Snapshot latency_snapshot() const noexcept;
 
 private:
@@ -57,10 +51,10 @@ private:
         std::unique_ptr<BookMatcher> matcher;
     };
 
-    const InstrumentRegistry&                       registry_;
-    OrderPool&                                      pool_;
-    std::unordered_map<std::uint32_t, Slot>         slots_;
-    std::unordered_map<std::uint32_t, OrderBook*>   books_;
+    const InstrumentRegistry&                     registry_;
+    OrderPool&                                    pool_;
+    std::unordered_map<std::uint32_t, Slot>       slots_;
+    std::unordered_map<std::uint32_t, OrderBook*> books_;
 };
 
 }  // namespace velox

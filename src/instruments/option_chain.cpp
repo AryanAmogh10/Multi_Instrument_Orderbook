@@ -87,7 +87,7 @@ std::vector<InstrumentId> OptionChain::puts_at(ExpiryDate expiry) const {
 std::vector<ExpiryDate> OptionChain::expiries() const {
     std::vector<ExpiryDate> result;
     result.reserve(levels_.size());
-    for (const auto& [exp, _] : levels_) result.push_back(exp);
+    for (const auto& [exp, strikes] : levels_) result.push_back(exp);
     return result;
 }
 

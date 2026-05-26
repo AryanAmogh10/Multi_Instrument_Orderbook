@@ -44,7 +44,7 @@ void BookMatcher::match(Order& taker, std::vector<Trade>& trades) {
         }
 
         const Quantity fill = qty_min(taker.remaining(), maker->remaining());
-        const Price trade_price = maker->limit_price;  // resting price wins
+        const Price trade_price = maker->limit_price;  // resting side sets the price
 
         taker.filled_qty  += fill;
         maker->filled_qty += fill;
@@ -56,7 +56,7 @@ void BookMatcher::match(Order& taker, std::vector<Trade>& trades) {
         if (maker->is_fully_filled()) {
             maker->status = OrderStatus::Filled;
             book_.pop_top(opp);
-            pool_.release(maker);  // Phase 4: recycle fully-filled maker
+            pool_.release(maker);
         } else {
             maker->status = OrderStatus::PartiallyFilled;
         }
@@ -64,7 +64,6 @@ void BookMatcher::match(Order& taker, std::vector<Trade>& trades) {
 }
 
 SubmitResult BookMatcher::submit(Order* order) {
-    // Phase 4 §4.5: record latency from match-start to result-ready.
     const std::uint64_t t0 = now_ns();
 
     SubmitResult result{order, {}};
@@ -93,7 +92,7 @@ SubmitResult BookMatcher::submit(Order* order) {
                             ? OrderStatus::PartiallyFilled
                             : OrderStatus::Cancelled;
     } else {
-        // GTC limit: order rests in the book.
+        // GTC limit: rest the unfilled remainder in the book.
         order->status = to_underlying(order->filled_qty) > 0
                             ? OrderStatus::PartiallyFilled
                             : OrderStatus::New;
@@ -110,7 +109,7 @@ bool BookMatcher::cancel(OrderId id) {
     Order* o = book_.cancel_and_get(id);
     if (!o) return false;
     o->status = OrderStatus::Cancelled;
-    pool_.release(o);   // Phase 4: recycle cancelled resting order
+    pool_.release(o);
     return true;
 }
 

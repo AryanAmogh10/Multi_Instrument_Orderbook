@@ -8,36 +8,32 @@
 
 namespace velox {
 
-// Returns nanoseconds from an arbitrary epoch (steady_clock). Suitable for
-// measuring wall-clock durations within a single process.
+// Nanoseconds from an arbitrary epoch (steady_clock). Good for measuring
+// durations within a single process run.
 [[nodiscard]] inline std::uint64_t now_ns() noexcept {
     using namespace std::chrono;
     return static_cast<std::uint64_t>(
         duration_cast<nanoseconds>(steady_clock::now().time_since_epoch()).count());
 }
 
-// Lock-free latency recorder using relaxed atomics.
+// Lock-free per-order latency recorder. Wired into BookMatcher::submit() to
+// measure how long matching takes from start to result-ready.
 //
-// Phase 4 §4.5: wired into BookMatcher::submit() to capture per-order
-// processing latency from the moment matching begins to the moment the
-// result is ready to send back to the client.
-//
-// Histogram buckets (nanoseconds):
+// Five histogram buckets (nanoseconds):
 //   [0] < 1 µs
 //   [1] 1–10 µs
 //   [2] 10–100 µs
 //   [3] 100 µs – 1 ms
-//   [4] ≥ 1 ms
+//   [4] >= 1 ms
 class LatencyStats {
 public:
     static constexpr std::size_t kBuckets = 5;
 
-    // Record one observation (nanoseconds).
     void record(std::uint64_t ns) noexcept {
         count_.fetch_add(1, std::memory_order_relaxed);
         sum_ns_.fetch_add(ns, std::memory_order_relaxed);
 
-        // CAS loop to keep running max without a mutex.
+        // CAS loop to keep a running max without a mutex.
         auto cur = max_ns_.load(std::memory_order_relaxed);
         while (ns > cur) {
             if (max_ns_.compare_exchange_weak(cur, ns, std::memory_order_relaxed))
@@ -56,8 +52,8 @@ public:
 
     [[nodiscard]] Snapshot snapshot() const noexcept {
         Snapshot s;
-        s.count  = count_.load(std::memory_order_relaxed);
-        auto sum = sum_ns_.load(std::memory_order_relaxed);
+        s.count   = count_.load(std::memory_order_relaxed);
+        auto sum  = sum_ns_.load(std::memory_order_relaxed);
         s.mean_ns = s.count ? sum / s.count : 0;
         s.max_ns  = max_ns_.load(std::memory_order_relaxed);
         for (std::size_t i = 0; i < kBuckets; ++i)

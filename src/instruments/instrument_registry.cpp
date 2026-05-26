@@ -34,7 +34,7 @@ const OptionChain* InstrumentRegistry::option_chain(std::string_view underlying)
 std::vector<std::string> InstrumentRegistry::option_underlyings() const {
     std::vector<std::string> result;
     result.reserve(option_chains_.size());
-    for (const auto& [sym, _] : option_chains_) result.push_back(sym);
+    for (const auto& [sym, chain] : option_chains_) { (void)chain; result.push_back(sym); }
     return result;
 }
 

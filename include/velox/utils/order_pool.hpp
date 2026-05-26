@@ -12,16 +12,13 @@
 
 namespace velox {
 
-// Fixed-capacity pool of Order objects. Eliminates per-order heap allocation
-// and shared_ptr atomic-refcount overhead on the critical matching path.
+// Fixed-capacity slab allocator for Order objects.
+// Pre-allocates everything at startup so we never call malloc on the critical path.
+// acquire() / release() are mutex-protected — this is fine because they only run
+// at order entry/exit, not inside the inner matching loop.
 //
-// Phase 4 §4.2: pool is pre-allocated at startup; acquire()/release() are
-// protected by a mutex, which is acceptable because pool operations are off
-// the hot matching loop (they happen at order entry/exit, not per tick).
-//
-// Lifetime: the pool OWNS all slab memory. Raw Order* returned by acquire()
-// are valid until the pool is destroyed — callers must never delete them.
-// release() marks a slot as reusable; the pool destructor frees the slab.
+// Ownership: the pool owns all memory. Order* pointers returned by acquire() stay
+// valid until the pool is destroyed — callers must never delete them directly.
 class OrderPool {
 public:
     explicit OrderPool(std::size_t capacity)
@@ -33,25 +30,24 @@ public:
     OrderPool(const OrderPool&) = delete;
     OrderPool& operator=(const OrderPool&) = delete;
 
-    // Acquire a zeroed Order from the pool. Returns nullptr if exhausted.
+    // Grab a zeroed Order slot. Returns nullptr if the pool is full.
     [[nodiscard]] Order* acquire() noexcept {
         std::lock_guard lk{mu_};
         if (top_ == 0) return nullptr;
         Order* o = &slab_[free_[--top_]];
-        *o = Order{};    // reset to clean state — no stale fields from prior use
+        *o = Order{};
         return o;
     }
 
-    // Return an Order* (previously obtained via acquire()) to the pool.
-    // Behaviour is undefined if `o` was not obtained from this pool.
+    // Return a slot obtained from acquire() back to the pool.
     void release(Order* o) noexcept {
         const auto idx = static_cast<std::uint32_t>(o - slab_.data());
         std::lock_guard lk{mu_};
         free_[top_++] = idx;
     }
 
-    // Like acquire(), but aborts on exhaustion.  Intended for tests and
-    // benchmarks where the pool capacity should never be reached.
+    // Same as acquire() but calls abort() if the pool is exhausted.
+    // Use in tests and benchmarks where running out is a bug, not a runtime condition.
     [[nodiscard]] Order* acquire_or_abort() noexcept {
         Order* o = acquire();
         if (!o) std::abort();
@@ -60,11 +56,11 @@ public:
 
     [[nodiscard]] std::size_t capacity() const noexcept { return slab_.size(); }
 
-    // Approximate free count — not synchronized, for diagnostics only.
+    // Not synchronized — only useful for diagnostics/logging.
     [[nodiscard]] std::size_t available_approx() const noexcept { return top_; }
 
 private:
-    std::vector<Order>        slab_;
+    std::vector<Order>         slab_;
     std::vector<std::uint32_t> free_;
     std::uint32_t              top_;
     mutable std::mutex         mu_;

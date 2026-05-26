@@ -10,10 +10,9 @@
 
 namespace velox {
 
-// Phase 4 §4.3: Intrusive doubly-linked list for orders at a single price
-// level.  Uses the level_prev / level_next pointers embedded in Order so
-// there is zero per-node allocation — the only heap memory is the Order
-// slab itself (owned by OrderPool).
+// Intrusive doubly-linked list for orders at a single price level.
+// Uses the level_prev / level_next pointers embedded directly in Order,
+// so there's no separate node allocation per order.
 struct LevelList {
     Order* head{nullptr};
     Order* tail{nullptr};
@@ -29,7 +28,6 @@ struct LevelList {
         tail = o;
     }
 
-    // Remove the front order (called after a full maker fill).
     void pop_front() noexcept {
         Order* o = head;
         head = o->level_next;
@@ -38,7 +36,7 @@ struct LevelList {
         o->level_prev = o->level_next = nullptr;
     }
 
-    // O(1) removal by pointer (iterator-free thanks to intrusive links).
+    // O(1) removal anywhere in the list thanks to the intrusive links.
     void erase(Order* o) noexcept {
         if (o->level_prev) o->level_prev->level_next = o->level_next;
         else               head = o->level_next;
@@ -47,7 +45,6 @@ struct LevelList {
         o->level_prev = o->level_next = nullptr;
     }
 
-    // Support range-for so tests and the invariant walker can iterate levels.
     struct iterator {
         Order* cur;
         explicit iterator(Order* o) noexcept : cur(o) {}
@@ -59,14 +56,14 @@ struct LevelList {
     [[nodiscard]] iterator end()   const noexcept { return iterator{nullptr}; }
 };
 
-// Single-instrument order book — pure state container with price-time priority.
-// Matching logic lives in BookMatcher (roadmap §1.3).
+// Single-instrument order book. Pure state container — matching logic lives in
+// BookMatcher so the two can be tested independently.
 //
-// Phase 4: OrderPtr is now a raw, non-owning pointer into an OrderPool slab.
-// The pool caller must ensure orders outlive any reference held by this book.
+// OrderPtr is a raw non-owning pointer into an OrderPool slab.
+// The pool caller must keep orders alive for as long as they're in this book.
 class OrderBook {
 public:
-    using OrderPtr  = Order*;                                       // non-owning
+    using OrderPtr  = Order*;
     using OrderList = LevelList;
     using BidLevels = std::map<Price, LevelList, std::greater<>>;
     using AskLevels = std::map<Price, LevelList, std::less<>>;
@@ -80,15 +77,10 @@ public:
 
     [[nodiscard]] InstrumentId instrument() const noexcept { return instrument_; }
 
-    // Insert an order at the back of its price level (price-time priority).
     void add_resting(Order* order);
-
-    // Remove a resting order by id. Returns true if found.
     bool cancel(OrderId id);
 
-    // Remove a resting order by id and return its pointer.
-    // Returns nullptr if not found.  Used by MatchingEngine to recycle the
-    // Order back to the pool.
+    // Remove by id and return the pointer — caller is responsible for recycling it.
     [[nodiscard]] Order* cancel_and_get(OrderId id);
 
     [[nodiscard]] Order* find(OrderId id) const;
@@ -102,28 +94,21 @@ public:
     [[nodiscard]] std::size_t order_count() const noexcept { return index_.size(); }
     [[nodiscard]] bool empty() const noexcept { return index_.empty(); }
 
-    // --- Matching primitives (used by BookMatcher) ---------------------------
-
-    // The front-most order on the best level of `side`, or nullptr if empty.
     [[nodiscard]] Order* peek_top(Side side) const;
-
-    // Drop the front-most order on the best level of `side`.
-    // UB if that side is empty.  Does NOT release the order to any pool —
-    // the caller (BookMatcher) is responsible for that.
     void pop_top(Side side);
 
     [[nodiscard]] const BidLevels& bids() const noexcept { return bids_; }
     [[nodiscard]] const AskLevels& asks() const noexcept { return asks_; }
 
-    // Phase 5: visit every resting order via `callback`, then clear the book.
-    // Used by BookMatcher::cancel_all() during instrument expiry.
+    // Visit every resting order via callback, then empty the book.
+    // Used during instrument expiry to recycle all slots back to the pool.
     void clear_and_drain(const std::function<void(Order*)>& callback);
 
 private:
     struct Locator {
         Side   side;
         Price  price;
-        Order* order;   // direct pointer — no iterator needed
+        Order* order;
     };
 
     InstrumentId                                instrument_;

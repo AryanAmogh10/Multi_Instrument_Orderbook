@@ -41,7 +41,6 @@ void ShardedEngine::run_shard(Shard& shard) {
         if (shard.queue.pop(cmd)) {
             if (cmd.kind == Command::Kind::Submit) {
                 auto result = shard.engine->submit(cmd.order);
-                // Release terminal takers back to the shared pool.
                 if (result.order && result.order->is_terminal()) {
                     pool_.release(result.order);
                 }
@@ -53,7 +52,7 @@ void ShardedEngine::run_shard(Shard& shard) {
             std::this_thread::yield();
         }
     }
-    // Drain remaining commands on shutdown.
+    // Drain anything left in the queue before exiting.
     while (shard.queue.pop(cmd)) {
         if (cmd.kind == Command::Kind::Submit) {
             auto result = shard.engine->submit(cmd.order);
@@ -87,13 +86,15 @@ bool ShardedEngine::cancel(InstrumentId inst, OrderId id) {
 
 void ShardedEngine::wait_idle() {
     for (;;) {
-        bool all_idle = true;
+        bool all_done = true;
         for (auto& s : shards_) {
-            const auto sub  = s->submitted.load(std::memory_order_acquire);
-            const auto proc = s->processed.load(std::memory_order_acquire);
-            if (sub != proc) { all_idle = false; break; }
+            if (s->submitted.load(std::memory_order_acquire) !=
+                s->processed.load(std::memory_order_acquire)) {
+                all_done = false;
+                break;
+            }
         }
-        if (all_idle) return;
+        if (all_done) return;
         std::this_thread::yield();
     }
 }
