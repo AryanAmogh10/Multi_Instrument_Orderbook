@@ -13,7 +13,7 @@
 
 #include "velox/instruments/instrument_registry.hpp"
 #include "velox/matching/matcher.hpp"
-#include "velox/utils/latency.hpp"  // now_ns()
+#include "velox/utils/latency.hpp" // now_ns()
 #include "velox/utils/pool.hpp"
 
 #include <algorithm>
@@ -23,61 +23,77 @@
 
 using namespace velox;
 
-namespace {
+namespace
+{
 
 constexpr InstrumentId kInst{1};
-constexpr std::size_t  kPoolCap = 1024;          // only ~2 orders live at once
-constexpr std::size_t  kWarmup  = 100'000;
-constexpr std::size_t  kSamples = 2'000'000;
+constexpr std::size_t kPoolCap = 1024; // only ~2 orders live at once
+constexpr std::size_t kWarmup = 100'000;
+constexpr std::size_t kSamples = 2'000'000;
 
-Order* make_order(Pool& pool, std::uint64_t id, Side side,
-                  std::int64_t price, std::uint64_t qty) {
+Order* make_order(Pool& pool, std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty)
+{
     Order* o = pool.acquire_or_abort();
     *o = Order{
-        OrderId{id}, Price{price}, Quantity{qty}, kZeroQty,
-        kInst, ClientId{1}, OrderStatus::New, side,
-        OrderType::Limit, TimeInForce::GTC, Timestamp{0},
+        OrderId{id},
+        Price{price},
+        Quantity{qty},
+        kZeroQty,
+        kInst,
+        ClientId{1},
+        OrderStatus::New,
+        side,
+        OrderType::Limit,
+        TimeInForce::GTC,
+        Timestamp{0},
     };
     return o;
 }
 
 // One sample: rest a sell, time the crossing buy, release the taker.
 // Returns elapsed nanoseconds for the timed submit().
-std::uint64_t one_cross(Matcher& matcher, Pool& pool, std::uint64_t& id) {
-    matcher.submit(make_order(pool, id++, Side::Sell, 100, 1));  // rests (untimed)
+std::uint64_t one_cross(Matcher& matcher, Pool& pool, std::uint64_t& id)
+{
+    matcher.submit(make_order(pool, id++, Side::Sell, 100, 1)); // rests (untimed)
     Order* taker = make_order(pool, id++, Side::Buy, 100, 1);
     const std::uint64_t t0 = now_ns();
-    auto res = matcher.submit(taker);                            // timed: full cross
+    auto res = matcher.submit(taker); // timed: full cross
     const std::uint64_t t1 = now_ns();
     pool.release(res.order);
     return t1 - t0;
 }
 
-std::uint64_t pct(const std::vector<std::uint64_t>& sorted, double p) {
-    if (sorted.empty()) return 0;
+std::uint64_t pct(const std::vector<std::uint64_t>& sorted, double p)
+{
+    if (sorted.empty())
+        return 0;
     auto idx = static_cast<std::size_t>(p * static_cast<double>(sorted.size() - 1));
     return sorted[idx];
 }
 
-}  // namespace
+} // namespace
 
-int main() {
-    Pool      pool{kPoolCap};
+int main()
+{
+    Pool pool{kPoolCap};
     OrderBook book{kInst};
-    Matcher   matcher{book, pool};
+    Matcher matcher{book, pool};
     std::uint64_t id = 1;
 
     // Warm up caches / branch predictors; discard these.
-    for (std::size_t i = 0; i < kWarmup; ++i) (void)one_cross(matcher, pool, id);
+    for (std::size_t i = 0; i < kWarmup; ++i)
+        (void)one_cross(matcher, pool, id);
 
     std::vector<std::uint64_t> lat;
     lat.reserve(kSamples);
-    for (std::size_t i = 0; i < kSamples; ++i) lat.push_back(one_cross(matcher, pool, id));
+    for (std::size_t i = 0; i < kSamples; ++i)
+        lat.push_back(one_cross(matcher, pool, id));
 
     std::sort(lat.begin(), lat.end());
 
     std::uint64_t sum = 0;
-    for (auto v : lat) sum += v;
+    for (auto v : lat)
+        sum += v;
     const double mean = static_cast<double>(sum) / static_cast<double>(lat.size());
 
     std::printf("matching cross+fill latency (one full trade per submit)\n");

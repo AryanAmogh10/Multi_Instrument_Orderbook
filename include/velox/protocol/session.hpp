@@ -8,7 +8,8 @@
 #include <functional>
 #include <vector>
 
-namespace velox::protocol {
+namespace velox::protocol
+{
 
 // Per-connection state machine. Decoupled from any specific I/O layer:
 //   - feed inbound bytes via on_bytes()
@@ -20,9 +21,15 @@ namespace velox::protocol {
 // callback registered at construction (e.g. by the dispatcher draining
 // completed orders). For the integration test we use the simpler approach of
 // having the gateway call the engine synchronously and push results back.
-class Session {
+class Session
+{
 public:
-    enum class State : std::uint8_t { NotLoggedOn, Active, Closing };
+    enum class State : std::uint8_t
+    {
+        NotLoggedOn,
+        Active,
+        Closing
+    };
 
     explicit Session(std::uint64_t session_id) noexcept : session_id_(session_id) {}
 
@@ -48,12 +55,12 @@ public:
     [[nodiscard]] std::uint32_t next_outbound_seq() noexcept { return ++out_seq_; }
 
 private:
-    std::uint64_t          session_id_;
-    State                  state_{State::NotLoggedOn};
-    std::uint32_t          client_id_{0};
-    std::uint32_t          out_seq_{0};
-    Framer                 framer_;
+    std::uint64_t session_id_;
+    State state_{State::NotLoggedOn};
+    std::uint32_t client_id_{0};
+    std::uint32_t out_seq_{0};
+    Framer framer_;
     std::vector<std::byte> outbound_;
 };
 
-}  // namespace velox::protocol
+} // namespace velox::protocol

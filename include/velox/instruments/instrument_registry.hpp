@@ -1,7 +1,7 @@
 #pragma once
 
-#include "velox/instruments/instrument_spec.hpp"
 #include "velox/instruments/chain.hpp"
+#include "velox/instruments/instrument_spec.hpp"
 
 #include <stdexcept>
 #include <string>
@@ -9,17 +9,21 @@
 #include <unordered_map>
 #include <vector>
 
-namespace velox {
+namespace velox
+{
 
 // Mutable while building, then freeze() makes it read-only.
 // All lookups after freeze() are safe to call from any thread.
-class InstrumentRegistry {
+class InstrumentRegistry
+{
 public:
-    class FrozenError : public std::logic_error {
+    class FrozenError : public std::logic_error
+    {
     public:
         FrozenError() : std::logic_error("InstrumentRegistry is frozen") {}
     };
-    class DuplicateError : public std::logic_error {
+    class DuplicateError : public std::logic_error
+    {
     public:
         explicit DuplicateError(const std::string& what) : std::logic_error(what) {}
     };
@@ -41,11 +45,11 @@ public:
     [[nodiscard]] std::vector<std::string> option_underlyings() const;
 
 private:
-    std::vector<InstrumentSpec>                         instruments_;
-    std::unordered_map<std::uint32_t, std::size_t>      id_map_;
-    std::unordered_map<std::string, std::size_t>        sym_map_;
-    std::unordered_map<std::string, Chain>              chains_;
-    bool                                                frozen_{false};
+    std::vector<InstrumentSpec> instruments_;
+    std::unordered_map<std::uint32_t, std::size_t> id_map_;
+    std::unordered_map<std::string, std::size_t> sym_map_;
+    std::unordered_map<std::string, Chain> chains_;
+    bool frozen_{false};
 };
 
-}  // namespace velox
+} // namespace velox

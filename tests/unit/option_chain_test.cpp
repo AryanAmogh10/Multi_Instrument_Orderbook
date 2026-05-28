@@ -6,25 +6,28 @@
 
 using namespace velox;
 
-namespace {
+namespace
+{
 
 constexpr ExpiryDate kJan{2026, 1, 17};
 constexpr ExpiryDate kFeb{2026, 2, 20};
 constexpr ExpiryDate kMar{2026, 3, 20};
 
-OptionContract make_contract(const std::string& und, ExpiryDate exp,
-                              std::int64_t strike_cents, OptionType type) {
+OptionContract
+make_contract(const std::string& und, ExpiryDate exp, std::int64_t strike_cents, OptionType type)
+{
     OptionContract c;
-    c.underlying  = und;
-    c.expiry      = exp;
-    c.strike      = Price{strike_cents};
+    c.underlying = und;
+    c.expiry = exp;
+    c.strike = Price{strike_cents};
     c.option_type = type;
     return c;
 }
 
-}  // namespace
+} // namespace
 
-TEST(OptionChain, EmptyChain) {
+TEST(OptionChain, EmptyChain)
+{
     OptionChain chain{"AAPL"};
     EXPECT_EQ(chain.underlying(), "AAPL");
     EXPECT_EQ(chain.size(), 0u);
@@ -32,7 +35,8 @@ TEST(OptionChain, EmptyChain) {
     EXPECT_TRUE(chain.expiries().empty());
 }
 
-TEST(OptionChain, AddAndFind) {
+TEST(OptionChain, AddAndFind)
+{
     OptionChain chain{"AAPL"};
     auto c = make_contract("AAPL", kJan, 15000, OptionType::Call);
     EXPECT_TRUE(chain.add(InstrumentId{1}, c));
@@ -43,26 +47,27 @@ TEST(OptionChain, AddAndFind) {
     EXPECT_EQ(*found, InstrumentId{1});
 }
 
-TEST(OptionChain, AddDuplicateReturnsFalse) {
+TEST(OptionChain, AddDuplicateReturnsFalse)
+{
     OptionChain chain{"AAPL"};
     auto c = make_contract("AAPL", kJan, 15000, OptionType::Call);
     EXPECT_TRUE(chain.add(InstrumentId{1}, c));
-    EXPECT_FALSE(chain.add(InstrumentId{2}, c));   // same slot
-    EXPECT_FALSE(chain.add(InstrumentId{1}, c));   // same id
+    EXPECT_FALSE(chain.add(InstrumentId{2}, c)); // same slot
+    EXPECT_FALSE(chain.add(InstrumentId{1}, c)); // same id
 }
 
-TEST(OptionChain, CallAndPutAtSameStrike) {
+TEST(OptionChain, CallAndPutAtSameStrike)
+{
     OptionChain chain{"AAPL"};
-    EXPECT_TRUE(chain.add(InstrumentId{1},
-        make_contract("AAPL", kJan, 15000, OptionType::Call)));
-    EXPECT_TRUE(chain.add(InstrumentId{2},
-        make_contract("AAPL", kJan, 15000, OptionType::Put)));
+    EXPECT_TRUE(chain.add(InstrumentId{1}, make_contract("AAPL", kJan, 15000, OptionType::Call)));
+    EXPECT_TRUE(chain.add(InstrumentId{2}, make_contract("AAPL", kJan, 15000, OptionType::Put)));
     EXPECT_EQ(chain.size(), 2u);
     EXPECT_EQ(*chain.find(kJan, Price{15000}, OptionType::Call), InstrumentId{1});
-    EXPECT_EQ(*chain.find(kJan, Price{15000}, OptionType::Put),  InstrumentId{2});
+    EXPECT_EQ(*chain.find(kJan, Price{15000}, OptionType::Put), InstrumentId{2});
 }
 
-TEST(OptionChain, AtExpiry) {
+TEST(OptionChain, AtExpiry)
+{
     OptionChain chain{"AAPL"};
     chain.add(InstrumentId{1}, make_contract("AAPL", kJan, 14500, OptionType::Call));
     chain.add(InstrumentId{2}, make_contract("AAPL", kJan, 14500, OptionType::Put));
@@ -77,7 +82,8 @@ TEST(OptionChain, AtExpiry) {
     EXPECT_EQ(feb[0], InstrumentId{4});
 }
 
-TEST(OptionChain, CallsAtAndPutsAt) {
+TEST(OptionChain, CallsAtAndPutsAt)
+{
     OptionChain chain{"AAPL"};
     chain.add(InstrumentId{1}, make_contract("AAPL", kJan, 14500, OptionType::Call));
     chain.add(InstrumentId{2}, make_contract("AAPL", kJan, 14500, OptionType::Put));
@@ -91,7 +97,8 @@ TEST(OptionChain, CallsAtAndPutsAt) {
     EXPECT_EQ(puts[0], InstrumentId{2});
 }
 
-TEST(OptionChain, ExpiresReturnsSorted) {
+TEST(OptionChain, ExpiresReturnsSorted)
+{
     OptionChain chain{"AAPL"};
     chain.add(InstrumentId{3}, make_contract("AAPL", kMar, 15000, OptionType::Call));
     chain.add(InstrumentId{1}, make_contract("AAPL", kJan, 15000, OptionType::Call));
@@ -104,23 +111,25 @@ TEST(OptionChain, ExpiresReturnsSorted) {
     EXPECT_EQ(exps[2], kMar);
 }
 
-TEST(OptionChain, ExpiringOnOrBefore) {
+TEST(OptionChain, ExpiringOnOrBefore)
+{
     OptionChain chain{"AAPL"};
     chain.add(InstrumentId{1}, make_contract("AAPL", kJan, 15000, OptionType::Call));
     chain.add(InstrumentId{2}, make_contract("AAPL", kFeb, 15000, OptionType::Call));
     chain.add(InstrumentId{3}, make_contract("AAPL", kMar, 15000, OptionType::Call));
 
     auto before_feb = chain.expiring_on_or_before(kFeb);
-    EXPECT_EQ(before_feb.size(), 2u);  // Jan + Feb
+    EXPECT_EQ(before_feb.size(), 2u); // Jan + Feb
 
     auto before_jan = chain.expiring_on_or_before(kJan);
-    EXPECT_EQ(before_jan.size(), 1u);  // Jan only
+    EXPECT_EQ(before_jan.size(), 1u); // Jan only
 
     ExpiryDate dec{2025, 12, 31};
     EXPECT_TRUE(chain.expiring_on_or_before(dec).empty());
 }
 
-TEST(OptionChain, Remove) {
+TEST(OptionChain, Remove)
+{
     OptionChain chain{"AAPL"};
     chain.add(InstrumentId{1}, make_contract("AAPL", kJan, 15000, OptionType::Call));
     chain.add(InstrumentId{2}, make_contract("AAPL", kJan, 15000, OptionType::Put));
@@ -130,10 +139,11 @@ TEST(OptionChain, Remove) {
     EXPECT_FALSE(chain.find(kJan, Price{15000}, OptionType::Call).has_value());
     EXPECT_TRUE(chain.find(kJan, Price{15000}, OptionType::Put).has_value());
 
-    EXPECT_FALSE(chain.remove(InstrumentId{1}));  // already removed
+    EXPECT_FALSE(chain.remove(InstrumentId{1})); // already removed
 }
 
-TEST(OptionChain, RemoveLastContractClearsExpiry) {
+TEST(OptionChain, RemoveLastContractClearsExpiry)
+{
     OptionChain chain{"AAPL"};
     chain.add(InstrumentId{1}, make_contract("AAPL", kJan, 15000, OptionType::Call));
     chain.remove(InstrumentId{1});

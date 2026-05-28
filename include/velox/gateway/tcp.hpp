@@ -11,16 +11,17 @@
 #include <vector>
 
 #ifdef _WIN32
-  #include <winsock2.h>
-  #include <ws2tcpip.h>
+#include <winsock2.h>
+#include <ws2tcpip.h>
 #else
-  #include <arpa/inet.h>
-  #include <netinet/in.h>
-  #include <sys/socket.h>
-  #include <unistd.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <sys/socket.h>
+#include <unistd.h>
 #endif
 
-namespace velox::gateway::tcp {
+namespace velox::gateway::tcp
+{
 
 #ifdef _WIN32
 using socket_t = SOCKET;
@@ -46,4 +47,4 @@ void close_socket(socket_t s) noexcept;
 [[nodiscard]] socket_t accept_one(socket_t listener);
 [[nodiscard]] socket_t connect_to(std::string_view host, std::uint16_t port);
 
-}  // namespace velox::gateway::tcp
+} // namespace velox::gateway::tcp

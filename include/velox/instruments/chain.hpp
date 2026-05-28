@@ -9,11 +9,13 @@
 #include <unordered_map>
 #include <vector>
 
-namespace velox {
+namespace velox
+{
 
 // All option contracts for one underlying, indexed by (expiry, strike, type).
 // Each entry maps to the InstrumentId of the corresponding order book.
-class Chain {
+class Chain
+{
 public:
     explicit Chain(std::string underlying);
 
@@ -24,8 +26,8 @@ public:
     bool remove(InstrumentId id);
 
     // Exact lookup.
-    [[nodiscard]] std::optional<InstrumentId> find(
-        ExpiryDate expiry, Price strike, OptionType type) const noexcept;
+    [[nodiscard]] std::optional<InstrumentId>
+    find(ExpiryDate expiry, Price strike, OptionType type) const noexcept;
 
     // All contracts (calls + puts) at a given expiry.
     [[nodiscard]] std::vector<InstrumentId> at_expiry(ExpiryDate expiry) const;
@@ -43,7 +45,8 @@ public:
     [[nodiscard]] std::size_t size() const noexcept { return by_id_.size(); }
 
 private:
-    struct StrikeSlot {
+    struct StrikeSlot
+    {
         std::optional<InstrumentId> call;
         std::optional<InstrumentId> put;
     };
@@ -59,4 +62,4 @@ private:
 // keep old name
 using OptionChain = Chain;
 
-}  // namespace velox
+} // namespace velox

@@ -8,51 +8,69 @@
 #include <optional>
 #include <unordered_map>
 
-namespace velox {
+namespace velox
+{
 
 // Intrusive doubly-linked list for orders at one price level.
 // Uses level_prev/level_next pointers in Order — no extra allocation per node.
-struct PriceLevel {
+struct PriceLevel
+{
     Order* head{nullptr};
     Order* tail{nullptr};
 
     [[nodiscard]] bool empty() const noexcept { return head == nullptr; }
     [[nodiscard]] Order* front() const noexcept { return head; }
 
-    void push_back(Order* o) noexcept {
+    void push_back(Order* o) noexcept
+    {
         o->level_prev = tail;
         o->level_next = nullptr;
-        if (tail) tail->level_next = o;
-        else      head = o;
+        if (tail)
+            tail->level_next = o;
+        else
+            head = o;
         tail = o;
     }
 
-    void pop_front() noexcept {
+    void pop_front() noexcept
+    {
         Order* o = head;
         head = o->level_next;
-        if (head) head->level_prev = nullptr;
-        else      tail = nullptr;
+        if (head)
+            head->level_prev = nullptr;
+        else
+            tail = nullptr;
         o->level_prev = o->level_next = nullptr;
     }
 
     // O(1) removal anywhere in the list — intrusive links make this easy
-    void erase(Order* o) noexcept {
-        if (o->level_prev) o->level_prev->level_next = o->level_next;
-        else               head = o->level_next;
-        if (o->level_next) o->level_next->level_prev = o->level_prev;
-        else               tail = o->level_prev;
+    void erase(Order* o) noexcept
+    {
+        if (o->level_prev)
+            o->level_prev->level_next = o->level_next;
+        else
+            head = o->level_next;
+        if (o->level_next)
+            o->level_next->level_prev = o->level_prev;
+        else
+            tail = o->level_prev;
         o->level_prev = o->level_next = nullptr;
     }
 
-    struct iterator {
+    struct iterator
+    {
         Order* cur;
         explicit iterator(Order* o) noexcept : cur(o) {}
         Order* operator*() const noexcept { return cur; }
-        iterator& operator++() noexcept { cur = cur->level_next; return *this; }
+        iterator& operator++() noexcept
+        {
+            cur = cur->level_next;
+            return *this;
+        }
         bool operator!=(const iterator& rhs) const noexcept { return cur != rhs.cur; }
     };
     [[nodiscard]] iterator begin() const noexcept { return iterator{head}; }
-    [[nodiscard]] iterator end()   const noexcept { return iterator{nullptr}; }
+    [[nodiscard]] iterator end() const noexcept { return iterator{nullptr}; }
 };
 
 // keep old name working
@@ -62,9 +80,10 @@ using LevelList = PriceLevel;
 // Matching logic lives in Matcher so the two can be tested independently.
 //
 // OrderPtr is a raw non-owning pointer into a Pool slab.
-class OrderBook {
+class OrderBook
+{
 public:
-    using OrderPtr  = Order*;
+    using OrderPtr = Order*;
     using OrderList = PriceLevel;
     using BidLevels = std::map<Price, PriceLevel, std::greater<>>;
     using AskLevels = std::map<Price, PriceLevel, std::less<>>;
@@ -104,16 +123,17 @@ public:
     void clear_and_drain(const std::function<void(Order*)>& callback);
 
 private:
-    struct Locator {
-        Side   side;
-        Price  price;
+    struct Locator
+    {
+        Side side;
+        Price price;
         Order* order;
     };
 
-    InstrumentId                                instrument_;
-    BidLevels                                   bids_;
-    AskLevels                                   asks_;
-    std::unordered_map<std::uint64_t, Locator>  order_map_;
+    InstrumentId instrument_;
+    BidLevels bids_;
+    AskLevels asks_;
+    std::unordered_map<std::uint64_t, Locator> order_map_;
 };
 
-}  // namespace velox
+} // namespace velox

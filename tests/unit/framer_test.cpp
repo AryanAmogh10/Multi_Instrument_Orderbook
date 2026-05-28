@@ -4,12 +4,14 @@
 
 using namespace velox::protocol;
 
-TEST(Framer, EmptyReturnsNullopt) {
+TEST(Framer, EmptyReturnsNullopt)
+{
     Framer f;
     EXPECT_FALSE(f.next().has_value());
 }
 
-TEST(Framer, SingleCompleteMessage) {
+TEST(Framer, SingleCompleteMessage)
+{
     Framer f;
     auto bytes = encode(1, MessageBody{HeartbeatMsg{}});
     f.feed(bytes);
@@ -19,15 +21,18 @@ TEST(Framer, SingleCompleteMessage) {
     EXPECT_FALSE(f.next().has_value());
 }
 
-TEST(Framer, MultipleMessagesInOneFeed) {
+TEST(Framer, MultipleMessagesInOneFeed)
+{
     Framer f;
     std::vector<std::byte> combined;
-    for (std::uint32_t i = 1; i <= 3; ++i) {
+    for (std::uint32_t i = 1; i <= 3; ++i)
+    {
         auto b = encode(i, MessageBody{HeartbeatMsg{}});
         combined.insert(combined.end(), b.begin(), b.end());
     }
     f.feed(combined);
-    for (std::uint32_t i = 1; i <= 3; ++i) {
+    for (std::uint32_t i = 1; i <= 3; ++i)
+    {
         auto m = f.next();
         ASSERT_TRUE(m.has_value());
         EXPECT_EQ(m->header.sequence, i);
@@ -35,11 +40,13 @@ TEST(Framer, MultipleMessagesInOneFeed) {
     EXPECT_FALSE(f.next().has_value());
 }
 
-TEST(Framer, SplitMessageAcrossFeeds) {
+TEST(Framer, SplitMessageAcrossFeeds)
+{
     Framer f;
     auto bytes = encode(7, MessageBody{NewOrderMsg{1, 2, 0, 0, 0, 100, 5}});
     // Feed byte-by-byte; nothing until the last byte arrives.
-    for (std::size_t i = 0; i + 1 < bytes.size(); ++i) {
+    for (std::size_t i = 0; i + 1 < bytes.size(); ++i)
+    {
         f.feed(std::span<const std::byte>{&bytes[i], 1});
         EXPECT_FALSE(f.next().has_value());
     }
@@ -49,17 +56,19 @@ TEST(Framer, SplitMessageAcrossFeeds) {
     EXPECT_EQ(m->header.sequence, 7u);
 }
 
-TEST(Framer, BadVersionFlagsError) {
+TEST(Framer, BadVersionFlagsError)
+{
     Framer f;
     auto bytes = encode(1, MessageBody{HeartbeatMsg{}});
-    bytes[0] = std::byte{99};   // corrupt version
+    bytes[0] = std::byte{99}; // corrupt version
     f.feed(bytes);
     EXPECT_FALSE(f.next().has_value());
     EXPECT_TRUE(f.has_error());
     EXPECT_EQ(f.error(), Framer::Error::BadVersion);
 }
 
-TEST(Framer, ResetClearsError) {
+TEST(Framer, ResetClearsError)
+{
     Framer f;
     auto bytes = encode(1, MessageBody{HeartbeatMsg{}});
     bytes[0] = std::byte{99};

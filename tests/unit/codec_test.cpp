@@ -4,7 +4,8 @@
 
 using namespace velox::protocol;
 
-TEST(Codec, BufferWriterWritesLE) {
+TEST(Codec, BufferWriterWritesLE)
+{
     std::array<std::byte, 8> buf{};
     BufferWriter w{buf};
     ASSERT_TRUE(w.write_u32(0x04030201u));
@@ -14,7 +15,8 @@ TEST(Codec, BufferWriterWritesLE) {
     EXPECT_EQ(std::to_integer<std::uint8_t>(buf[3]), 0x04);
 }
 
-TEST(Codec, RoundTripIntegers) {
+TEST(Codec, RoundTripIntegers)
+{
     std::array<std::byte, 32> buf{};
     BufferWriter w{buf};
     ASSERT_TRUE(w.write_u8(0xAB));
@@ -24,24 +26,35 @@ TEST(Codec, RoundTripIntegers) {
     ASSERT_TRUE(w.write_i64(-12345));
 
     BufferReader r{buf};
-    std::uint8_t  a{}; std::uint16_t b{}; std::uint32_t c{}; std::uint64_t d{}; std::int64_t e{};
-    ASSERT_TRUE(r.read_u8(a));   EXPECT_EQ(a, 0xAB);
-    ASSERT_TRUE(r.read_u16(b));  EXPECT_EQ(b, 0xCAFE);
-    ASSERT_TRUE(r.read_u32(c));  EXPECT_EQ(c, 0xDEADBEEFu);
-    ASSERT_TRUE(r.read_u64(d));  EXPECT_EQ(d, 0xFEEDFACEDEADBEEFull);
-    ASSERT_TRUE(r.read_i64(e));  EXPECT_EQ(e, -12345);
+    std::uint8_t a{};
+    std::uint16_t b{};
+    std::uint32_t c{};
+    std::uint64_t d{};
+    std::int64_t e{};
+    ASSERT_TRUE(r.read_u8(a));
+    EXPECT_EQ(a, 0xAB);
+    ASSERT_TRUE(r.read_u16(b));
+    EXPECT_EQ(b, 0xCAFE);
+    ASSERT_TRUE(r.read_u32(c));
+    EXPECT_EQ(c, 0xDEADBEEFu);
+    ASSERT_TRUE(r.read_u64(d));
+    EXPECT_EQ(d, 0xFEEDFACEDEADBEEFull);
+    ASSERT_TRUE(r.read_i64(e));
+    EXPECT_EQ(e, -12345);
 }
 
-TEST(Codec, OverflowDetected) {
+TEST(Codec, OverflowDetected)
+{
     std::array<std::byte, 2> buf{};
     BufferWriter w{buf};
     ASSERT_TRUE(w.write_u8(1));
     ASSERT_TRUE(w.write_u8(2));
-    EXPECT_FALSE(w.write_u8(3));   // full
-    EXPECT_FALSE(w.write_u32(0));  // partial overflow
+    EXPECT_FALSE(w.write_u8(3));  // full
+    EXPECT_FALSE(w.write_u32(0)); // partial overflow
 }
 
-TEST(Codec, HeaderRoundTrip) {
+TEST(Codec, HeaderRoundTrip)
+{
     std::array<std::byte, 8> buf{};
     BufferWriter w{buf};
     MessageHeader h{kProtocolVersion, MsgType::NewOrder, 32, 0xABCDEFu};
@@ -55,7 +68,8 @@ TEST(Codec, HeaderRoundTrip) {
     EXPECT_EQ(out->sequence, 0xABCDEFu);
 }
 
-TEST(Codec, NewOrderRoundTrip) {
+TEST(Codec, NewOrderRoundTrip)
+{
     NewOrderMsg msg{
         .client_order_id = 42,
         .instrument_id = 7,
@@ -73,8 +87,8 @@ TEST(Codec, NewOrderRoundTrip) {
     ASSERT_TRUE(h.has_value());
     EXPECT_EQ(h->msg_type, MsgType::NewOrder);
 
-    auto body = decode_body(*h, std::span<const std::byte>{
-        bytes.data() + kHeaderSize, h->body_length});
+    auto body =
+        decode_body(*h, std::span<const std::byte>{bytes.data() + kHeaderSize, h->body_length});
     ASSERT_TRUE(body.has_value());
     auto* parsed = std::get_if<NewOrderMsg>(&*body);
     ASSERT_NE(parsed, nullptr);
@@ -85,15 +99,16 @@ TEST(Codec, NewOrderRoundTrip) {
     EXPECT_EQ(parsed->tif, 1);
 }
 
-TEST(Codec, FillRoundTrip) {
+TEST(Codec, FillRoundTrip)
+{
     FillMsg fill{12, 99, -1234, 7, 1};
     auto bytes = encode(5, MessageBody{fill});
 
     BufferReader hr{std::span<const std::byte>{bytes.data(), kHeaderSize}};
     auto h = decode_header(hr);
     ASSERT_TRUE(h);
-    auto body = decode_body(*h, std::span<const std::byte>{
-        bytes.data() + kHeaderSize, h->body_length});
+    auto body =
+        decode_body(*h, std::span<const std::byte>{bytes.data() + kHeaderSize, h->body_length});
     auto* parsed = std::get_if<FillMsg>(&*body);
     ASSERT_NE(parsed, nullptr);
     EXPECT_EQ(parsed->client_order_id, 12u);
@@ -102,11 +117,12 @@ TEST(Codec, FillRoundTrip) {
     EXPECT_EQ(parsed->quantity, 7u);
 }
 
-TEST(Codec, EmptyBodyMessages) {
-    for (auto mt : {MsgType::Logout, MsgType::Heartbeat}) {
-        MessageBody body = (mt == MsgType::Logout)
-                               ? MessageBody{LogoutMsg{}}
-                               : MessageBody{HeartbeatMsg{}};
+TEST(Codec, EmptyBodyMessages)
+{
+    for (auto mt : {MsgType::Logout, MsgType::Heartbeat})
+    {
+        MessageBody body =
+            (mt == MsgType::Logout) ? MessageBody{LogoutMsg{}} : MessageBody{HeartbeatMsg{}};
         auto bytes = encode(1, body);
         EXPECT_EQ(bytes.size(), kHeaderSize);
         BufferReader hr{bytes};
@@ -117,13 +133,14 @@ TEST(Codec, EmptyBodyMessages) {
     }
 }
 
-TEST(Codec, RejectReasonRoundTrip) {
+TEST(Codec, RejectReasonRoundTrip)
+{
     OrderRejectMsg rj{100, RejectReason::UnknownInstrument};
     auto bytes = encode(1, MessageBody{rj});
     BufferReader hr{std::span<const std::byte>{bytes.data(), kHeaderSize}};
     auto h = decode_header(hr);
-    auto body = decode_body(*h, std::span<const std::byte>{
-        bytes.data() + kHeaderSize, h->body_length});
+    auto body =
+        decode_body(*h, std::span<const std::byte>{bytes.data() + kHeaderSize, h->body_length});
     auto* parsed = std::get_if<OrderRejectMsg>(&*body);
     ASSERT_NE(parsed, nullptr);
     EXPECT_EQ(parsed->reason, RejectReason::UnknownInstrument);

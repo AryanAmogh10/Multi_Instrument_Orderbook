@@ -4,19 +4,22 @@
 
 using namespace velox;
 
-namespace {
+namespace
+{
 constexpr ExpiryDate kJan{2026, 1, 17};
 constexpr ExpiryDate kFeb{2026, 2, 20};
 constexpr ExpiryDate kMar{2026, 3, 20};
-}  // namespace
+} // namespace
 
-TEST(ExpirySweeper, EmptySweepReturnsNothing) {
+TEST(ExpirySweeper, EmptySweepReturnsNothing)
+{
     ExpirySweeper sw;
     auto expired = sw.sweep(kJan);
     EXPECT_TRUE(expired.empty());
 }
 
-TEST(ExpirySweeper, SweepOnExactDate) {
+TEST(ExpirySweeper, SweepOnExactDate)
+{
     ExpirySweeper sw;
     sw.register_instrument(InstrumentId{1}, kJan);
     auto expired = sw.sweep(kJan);
@@ -25,34 +28,38 @@ TEST(ExpirySweeper, SweepOnExactDate) {
     EXPECT_EQ(sw.size(), 0u);
 }
 
-TEST(ExpirySweeper, SweepBeforeDateKeepsInstrument) {
+TEST(ExpirySweeper, SweepBeforeDateKeepsInstrument)
+{
     ExpirySweeper sw;
     sw.register_instrument(InstrumentId{1}, kFeb);
-    auto expired = sw.sweep(kJan);  // Jan < Feb → not expired yet
+    auto expired = sw.sweep(kJan); // Jan < Feb → not expired yet
     EXPECT_TRUE(expired.empty());
     EXPECT_EQ(sw.size(), 1u);
 }
 
-TEST(ExpirySweeper, SweepCollectsMultiple) {
+TEST(ExpirySweeper, SweepCollectsMultiple)
+{
     ExpirySweeper sw;
     sw.register_instrument(InstrumentId{1}, kJan);
     sw.register_instrument(InstrumentId{2}, kFeb);
     sw.register_instrument(InstrumentId{3}, kMar);
 
-    auto expired = sw.sweep(kFeb);  // Jan + Feb expire
+    auto expired = sw.sweep(kFeb); // Jan + Feb expire
     EXPECT_EQ(expired.size(), 2u);
-    EXPECT_EQ(sw.size(), 1u);  // Mar still pending
+    EXPECT_EQ(sw.size(), 1u); // Mar still pending
 }
 
-TEST(ExpirySweeper, SweepIsIdempotentAfterExpiry) {
+TEST(ExpirySweeper, SweepIsIdempotentAfterExpiry)
+{
     ExpirySweeper sw;
     sw.register_instrument(InstrumentId{1}, kJan);
     sw.sweep(kJan);
-    auto again = sw.sweep(kJan);  // already swept
+    auto again = sw.sweep(kJan); // already swept
     EXPECT_TRUE(again.empty());
 }
 
-TEST(ExpirySweeper, CallbackInvoked) {
+TEST(ExpirySweeper, CallbackInvoked)
+{
     ExpirySweeper sw;
     sw.register_instrument(InstrumentId{1}, kJan);
     sw.register_instrument(InstrumentId{2}, kFeb);
@@ -65,7 +72,8 @@ TEST(ExpirySweeper, CallbackInvoked) {
     EXPECT_EQ(seen[0], InstrumentId{1});
 }
 
-TEST(ExpirySweeper, UnregisterPreventsExpiry) {
+TEST(ExpirySweeper, UnregisterPreventsExpiry)
+{
     ExpirySweeper sw;
     sw.register_instrument(InstrumentId{1}, kJan);
     sw.unregister(InstrumentId{1});
@@ -74,7 +82,8 @@ TEST(ExpirySweeper, UnregisterPreventsExpiry) {
     EXPECT_TRUE(expired.empty());
 }
 
-TEST(ExpirySweeper, MultipleAtSameDate) {
+TEST(ExpirySweeper, MultipleAtSameDate)
+{
     ExpirySweeper sw;
     sw.register_instrument(InstrumentId{1}, kJan);
     sw.register_instrument(InstrumentId{2}, kJan);

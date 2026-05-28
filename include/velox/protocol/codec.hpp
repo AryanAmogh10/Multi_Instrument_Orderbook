@@ -8,12 +8,14 @@
 #include <span>
 #include <vector>
 
-namespace velox::protocol {
+namespace velox::protocol
+{
 
 // Encoding errors are signalled by short return values; decoding errors return
 // nullopt. The wire format is little-endian throughout (roadmap §3.1).
 
-class BufferWriter {
+class BufferWriter
+{
 public:
     explicit BufferWriter(std::span<std::byte> buf) noexcept : buf_(buf) {}
 
@@ -30,7 +32,8 @@ private:
     std::size_t pos_{0};
 };
 
-class BufferReader {
+class BufferReader
+{
 public:
     explicit BufferReader(std::span<const std::byte> buf) noexcept : buf_(buf) {}
 
@@ -40,7 +43,7 @@ public:
     [[nodiscard]] bool read_u64(std::uint64_t& out) noexcept;
     [[nodiscard]] bool read_i64(std::int64_t& out) noexcept;
 
-    [[nodiscard]] std::size_t pos()       const noexcept { return pos_; }
+    [[nodiscard]] std::size_t pos() const noexcept { return pos_; }
     [[nodiscard]] std::size_t remaining() const noexcept { return buf_.size() - pos_; }
 
 private:
@@ -60,7 +63,7 @@ private:
 [[nodiscard]] std::vector<std::byte> encode(std::uint32_t seq, const MessageBody&);
 
 // ---- Body decode given a header ----------------------------------------
-[[nodiscard]] std::optional<MessageBody>
-decode_body(const MessageHeader& header, std::span<const std::byte> body) noexcept;
+[[nodiscard]] std::optional<MessageBody> decode_body(const MessageHeader& header,
+                                                     std::span<const std::byte> body) noexcept;
 
-}  // namespace velox::protocol
+} // namespace velox::protocol

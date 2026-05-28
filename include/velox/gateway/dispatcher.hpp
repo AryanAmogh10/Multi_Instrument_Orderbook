@@ -3,13 +3,15 @@
 #include "velox/matching/engine.hpp"
 #include "velox/protocol/session.hpp"
 
-namespace velox::gateway {
+namespace velox::gateway
+{
 
 // Translates Session messages into Engine calls.
 //
 // Synchronous: each NewOrder/Cancel is processed inline on the same Session.
 // ShardedMatcher wiring would go here for multi-threaded mode.
-class Dispatcher {
+class Dispatcher
+{
 public:
     explicit Dispatcher(Engine& engine) noexcept : engine_(engine) {}
 
@@ -23,8 +25,8 @@ private:
     void handle_new_order(protocol::Session&, const protocol::NewOrderMsg&);
     void handle_cancel(protocol::Session&, const protocol::CancelOrderMsg&);
 
-    Engine&       engine_;
+    Engine& engine_;
     std::uint64_t next_server_order_id_{1};
 };
 
-}  // namespace velox::gateway
+} // namespace velox::gateway

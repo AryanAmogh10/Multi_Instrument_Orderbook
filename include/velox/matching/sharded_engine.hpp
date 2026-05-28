@@ -12,23 +12,30 @@
 #include <thread>
 #include <vector>
 
-namespace velox {
+namespace velox
+{
 
 // Multi-threaded front-end. N worker threads each own a disjoint subset of
 // instruments (instrument_id % N). Orders are routed via per-shard SPSC queues.
 //
 // All threads share one Pool. Use acquire_order() before submit().
 // Terminal takers are released automatically by the worker.
-class ShardedMatcher {
+class ShardedMatcher
+{
 public:
-    static constexpr std::size_t kQueueCapacity  = 4096;
+    static constexpr std::size_t kQueueCapacity = 4096;
     static constexpr std::size_t kDefaultPoolSize = 65'536;
 
-    struct Command {
-        enum class Kind : std::uint8_t { Submit, Cancel } kind;
-        InstrumentId  instrument;
-        OrderId       order_id;   // for Cancel
-        Order*        order;      // for Submit
+    struct Command
+    {
+        enum class Kind : std::uint8_t
+        {
+            Submit,
+            Cancel
+        } kind;
+        InstrumentId instrument;
+        OrderId order_id; // for Cancel
+        Order* order;     // for Submit
     };
 
     ShardedMatcher(const InstrumentRegistry& registry,
@@ -49,7 +56,8 @@ public:
     void wait_idle();
 
     [[nodiscard]] std::size_t num_shards() const noexcept { return shards_.size(); }
-    [[nodiscard]] std::size_t shard_for(InstrumentId id) const noexcept {
+    [[nodiscard]] std::size_t shard_for(InstrumentId id) const noexcept
+    {
         return to_underlying(id) % shards_.size();
     }
 
@@ -57,23 +65,24 @@ public:
     [[nodiscard]] const OrderBook* book(InstrumentId id) const noexcept;
 
 private:
-    struct Shard {
+    struct Shard
+    {
         SpscRingBuffer<Command, kQueueCapacity> queue;
-        std::unique_ptr<Engine>                 engine;
-        std::atomic<std::uint64_t>              submitted{0};
-        std::atomic<std::uint64_t>              processed{0};
-        std::atomic<bool>                       stop{false};
-        std::thread                             worker;
+        std::unique_ptr<Engine> engine;
+        std::atomic<std::uint64_t> submitted{0};
+        std::atomic<std::uint64_t> processed{0};
+        std::atomic<bool> stop{false};
+        std::thread worker;
     };
 
     void run_shard(Shard& shard);
 
-    Pool                                 pool_;
-    std::vector<std::unique_ptr<Shard>>  shards_;
-    const InstrumentRegistry&            registry_;
+    Pool pool_;
+    std::vector<std::unique_ptr<Shard>> shards_;
+    const InstrumentRegistry& registry_;
 };
 
 // keep old name working
 using ShardedEngine = ShardedMatcher;
 
-}  // namespace velox
+} // namespace velox

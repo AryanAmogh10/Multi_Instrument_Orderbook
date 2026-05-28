@@ -10,13 +10,15 @@
 using namespace velox;
 using namespace velox::protocol;
 
-namespace {
+namespace
+{
 
 // Pool shared across all e2e tests. The Server/Dispatcher acquires from this
 // pool on the session thread and releases terminal orders after each order.
 OrderPool g_pool{1024};
 
-InstrumentRegistry make_registry() {
+InstrumentRegistry make_registry()
+{
     InstrumentRegistry r;
     r.add(InstrumentSpec{InstrumentId{1}, "AAPL", InstrumentType::Equity, 1, 1, "USD"});
     r.freeze();
@@ -26,9 +28,10 @@ InstrumentRegistry make_registry() {
 // Pick a high port unlikely to collide. CI runs serialised so this is fine.
 constexpr std::uint16_t kPort = 47811;
 
-}  // namespace
+} // namespace
 
-TEST(GatewayE2E, LogonNewOrderFillRoundTrip) {
+TEST(GatewayE2E, LogonNewOrderFillRoundTrip)
+{
     auto reg = make_registry();
     MatchingEngine engine{reg, g_pool};
     gateway::Server server{engine, kPort};
@@ -65,7 +68,8 @@ TEST(GatewayE2E, LogonNewOrderFillRoundTrip) {
     server.stop();
 }
 
-TEST(GatewayE2E, CancelRoundTrip) {
+TEST(GatewayE2E, CancelRoundTrip)
+{
     auto reg = make_registry();
     MatchingEngine engine{reg, g_pool};
     gateway::Server server{engine, static_cast<std::uint16_t>(kPort + 1)};
@@ -78,7 +82,7 @@ TEST(GatewayE2E, CancelRoundTrip) {
     ASSERT_TRUE(client.recv().has_value());
 
     ASSERT_TRUE(client.send(NewOrderMsg{10, 1, 0, 0, 0, 100, 5}));
-    ASSERT_TRUE(client.recv().has_value());   // ack
+    ASSERT_TRUE(client.recv().has_value()); // ack
 
     ASSERT_TRUE(client.send(CancelOrderMsg{10, 1}));
     auto cx = client.recv();
@@ -88,7 +92,8 @@ TEST(GatewayE2E, CancelRoundTrip) {
     server.stop();
 }
 
-TEST(GatewayE2E, OrderBeforeLogonRejected) {
+TEST(GatewayE2E, OrderBeforeLogonRejected)
+{
     auto reg = make_registry();
     MatchingEngine engine{reg, g_pool};
     gateway::Server server{engine, static_cast<std::uint16_t>(kPort + 2)};

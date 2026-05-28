@@ -1,6 +1,7 @@
 #pragma once
 #include <string_view>
 
-namespace velox {
+namespace velox
+{
 inline constexpr std::string_view kVersion = "0.1.0";
 }

@@ -18,41 +18,56 @@
 
 using namespace velox;
 
-namespace {
+namespace
+{
 
 constexpr InstrumentId kInst{1};
 
 // Large pool: property tests submit up to 5000 orders without releasing.
 OrderPool g_pool{8192};
 
-Order* mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty,
-          TimeInForce tif) {
+Order* mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty, TimeInForce tif)
+{
     Order* o = g_pool.acquire_or_abort();
     assert(o && "invariants test pool exhausted — increase g_pool size");
     *o = Order{
-        OrderId{id}, Price{price}, Quantity{qty}, kZeroQty,
-        kInst, ClientId{1}, OrderStatus::New, side,
-        OrderType::Limit, tif, Timestamp{0},
+        OrderId{id},
+        Price{price},
+        Quantity{qty},
+        kZeroQty,
+        kInst,
+        ClientId{1},
+        OrderStatus::New,
+        side,
+        OrderType::Limit,
+        tif,
+        Timestamp{0},
     };
     return o;
 }
 
-struct Counts {
+struct Counts
+{
     std::size_t orders = 0;
 };
 
-Counts walk_levels(const OrderBook& ob) {
+Counts walk_levels(const OrderBook& ob)
+{
     Counts c;
-    for (const auto& [p, list] : ob.bids()) {
+    for (const auto& [p, list] : ob.bids())
+    {
         (void)p;
-        for (Order* o : list) {
+        for (Order* o : list)
+        {
             EXPECT_EQ(o->side, Side::Buy);
             ++c.orders;
         }
     }
-    for (const auto& [p, list] : ob.asks()) {
+    for (const auto& [p, list] : ob.asks())
+    {
         (void)p;
-        for (Order* o : list) {
+        for (Order* o : list)
+        {
             EXPECT_EQ(o->side, Side::Sell);
             ++c.orders;
         }
@@ -60,8 +75,10 @@ Counts walk_levels(const OrderBook& ob) {
     return c;
 }
 
-void check_invariants(const OrderBook& ob) {
-    if (ob.best_bid() && ob.best_ask()) {
+void check_invariants(const OrderBook& ob)
+{
+    if (ob.best_bid() && ob.best_ask())
+    {
         EXPECT_LT(to_underlying(*ob.best_bid()), to_underlying(*ob.best_ask()))
             << "book is crossed";
     }
@@ -69,9 +86,10 @@ void check_invariants(const OrderBook& ob) {
     EXPECT_EQ(c.orders, ob.order_count());
 }
 
-}  // namespace
+} // namespace
 
-TEST(Property, RandomLimitSequenceMaintainsInvariants) {
+TEST(Property, RandomLimitSequenceMaintainsInvariants)
+{
     OrderBook ob{kInst};
     BookMatcher me{ob, g_pool};
 
@@ -86,28 +104,36 @@ TEST(Property, RandomLimitSequenceMaintainsInvariants) {
     std::uint64_t total_traded = 0;
     std::uint64_t total_submitted_qty = 0;
 
-    for (int i = 0; i < 5000; ++i) {
-        if (action_d(rng) < 2 && !live.empty()) {
+    for (int i = 0; i < 5000; ++i)
+    {
+        if (action_d(rng) < 2 && !live.empty())
+        {
             // Cancel a random live order.
             std::uniform_int_distribution<std::size_t> pick(0, live.size() - 1);
             const std::size_t idx = pick(rng);
             const OrderId id = live[idx];
-            if (me.cancel(id)) {
+            if (me.cancel(id))
+            {
                 live[idx] = live.back();
                 live.pop_back();
             }
-        } else {
+        }
+        else
+        {
             const Side side = side_d(rng) ? Side::Buy : Side::Sell;
             const auto qty = static_cast<std::uint64_t>(qty_d(rng));
             auto order = mk(next_id++, side, price_d(rng), qty, TimeInForce::GTC);
             total_submitted_qty += qty;
             auto res = me.submit(order);
-            for (const auto& t : res.trades) {
+            for (const auto& t : res.trades)
+            {
                 total_traded += to_underlying(t.quantity);
             }
             if (res.order->status == OrderStatus::New ||
-                res.order->status == OrderStatus::PartiallyFilled) {
-                if (!res.order->is_fully_filled() && ob.find(res.order->id) != nullptr) {
+                res.order->status == OrderStatus::PartiallyFilled)
+            {
+                if (!res.order->is_fully_filled() && ob.find(res.order->id) != nullptr)
+                {
                     live.push_back(res.order->id);
                 }
             }
@@ -119,7 +145,8 @@ TEST(Property, RandomLimitSequenceMaintainsInvariants) {
     EXPECT_LE(total_traded, total_submitted_qty);
 }
 
-TEST(Property, FOKNeverPartiallyExecutes) {
+TEST(Property, FOKNeverPartiallyExecutes)
+{
     OrderBook ob{kInst};
     BookMatcher me{ob, g_pool};
 
@@ -131,28 +158,34 @@ TEST(Property, FOKNeverPartiallyExecutes) {
     std::uint64_t next_id = 1;
 
     // Seed book with some GTC liquidity.
-    for (int i = 0; i < 50; ++i) {
+    for (int i = 0; i < 50; ++i)
+    {
         const Side s = side_d(rng) ? Side::Buy : Side::Sell;
-        me.submit(mk(next_id++, s, price_d(rng),
-                     static_cast<std::uint64_t>(qty_d(rng)), TimeInForce::GTC));
+        me.submit(mk(
+            next_id++, s, price_d(rng), static_cast<std::uint64_t>(qty_d(rng)), TimeInForce::GTC));
     }
 
     // Now hammer with FOKs.
-    for (int i = 0; i < 500; ++i) {
+    for (int i = 0; i < 500; ++i)
+    {
         const auto before_count = ob.order_count();
         const Side s = side_d(rng) ? Side::Buy : Side::Sell;
-        auto fok = mk(next_id++, s, price_d(rng),
-                      static_cast<std::uint64_t>(qty_d(rng)), TimeInForce::FOK);
+        auto fok = mk(
+            next_id++, s, price_d(rng), static_cast<std::uint64_t>(qty_d(rng)), TimeInForce::FOK);
         const std::uint64_t want = to_underlying(fok->initial_qty);
         auto res = me.submit(fok);
 
-        if (res.order->status == OrderStatus::Rejected) {
+        if (res.order->status == OrderStatus::Rejected)
+        {
             EXPECT_TRUE(res.trades.empty());
             EXPECT_LE(ob.order_count(), before_count);
-        } else {
+        }
+        else
+        {
             EXPECT_EQ(res.order->status, OrderStatus::Filled);
             std::uint64_t got = 0;
-            for (const auto& t : res.trades) got += to_underlying(t.quantity);
+            for (const auto& t : res.trades)
+                got += to_underlying(t.quantity);
             EXPECT_EQ(got, want);
         }
         check_invariants(ob);

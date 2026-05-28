@@ -4,26 +4,31 @@
 
 using namespace velox;
 
-namespace {
-InstrumentSpec equity(std::uint32_t id, std::string sym) {
+namespace
+{
+InstrumentSpec equity(std::uint32_t id, std::string sym)
+{
     return InstrumentSpec{InstrumentId{id}, std::move(sym), InstrumentType::Equity, 1, 1, "USD"};
 }
-}  // namespace
+} // namespace
 
-TEST(InstrumentRegistry, StartsEmptyUnfrozen) {
+TEST(InstrumentRegistry, StartsEmptyUnfrozen)
+{
     InstrumentRegistry r;
     EXPECT_EQ(r.size(), 0u);
     EXPECT_FALSE(r.frozen());
 }
 
-TEST(InstrumentRegistry, AddIncreasesSize) {
+TEST(InstrumentRegistry, AddIncreasesSize)
+{
     InstrumentRegistry r;
     r.add(equity(1, "AAPL"));
     r.add(equity(2, "MSFT"));
     EXPECT_EQ(r.size(), 2u);
 }
 
-TEST(InstrumentRegistry, LookupById) {
+TEST(InstrumentRegistry, LookupById)
+{
     InstrumentRegistry r;
     r.add(equity(7, "TSLA"));
     const auto* spec = r.find(InstrumentId{7});
@@ -31,7 +36,8 @@ TEST(InstrumentRegistry, LookupById) {
     EXPECT_EQ(spec->symbol, "TSLA");
 }
 
-TEST(InstrumentRegistry, LookupBySymbol) {
+TEST(InstrumentRegistry, LookupBySymbol)
+{
     InstrumentRegistry r;
     r.add(equity(7, "TSLA"));
     const auto* spec = r.find("TSLA");
@@ -39,25 +45,29 @@ TEST(InstrumentRegistry, LookupBySymbol) {
     EXPECT_EQ(to_underlying(spec->id), 7u);
 }
 
-TEST(InstrumentRegistry, MissingIdReturnsNull) {
+TEST(InstrumentRegistry, MissingIdReturnsNull)
+{
     InstrumentRegistry r;
     EXPECT_EQ(r.find(InstrumentId{42}), nullptr);
     EXPECT_EQ(r.find("NOPE"), nullptr);
 }
 
-TEST(InstrumentRegistry, DuplicateIdRejected) {
+TEST(InstrumentRegistry, DuplicateIdRejected)
+{
     InstrumentRegistry r;
     r.add(equity(1, "AAPL"));
     EXPECT_THROW(r.add(equity(1, "OTHER")), InstrumentRegistry::DuplicateError);
 }
 
-TEST(InstrumentRegistry, DuplicateSymbolRejected) {
+TEST(InstrumentRegistry, DuplicateSymbolRejected)
+{
     InstrumentRegistry r;
     r.add(equity(1, "AAPL"));
     EXPECT_THROW(r.add(equity(2, "AAPL")), InstrumentRegistry::DuplicateError);
 }
 
-TEST(InstrumentRegistry, FreezeBlocksFurtherAdds) {
+TEST(InstrumentRegistry, FreezeBlocksFurtherAdds)
+{
     InstrumentRegistry r;
     r.add(equity(1, "AAPL"));
     r.freeze();
@@ -65,7 +75,8 @@ TEST(InstrumentRegistry, FreezeBlocksFurtherAdds) {
     EXPECT_THROW(r.add(equity(2, "MSFT")), InstrumentRegistry::FrozenError);
 }
 
-TEST(InstrumentRegistry, LookupsWorkAfterFreeze) {
+TEST(InstrumentRegistry, LookupsWorkAfterFreeze)
+{
     InstrumentRegistry r;
     r.add(equity(1, "AAPL"));
     r.freeze();
@@ -73,7 +84,8 @@ TEST(InstrumentRegistry, LookupsWorkAfterFreeze) {
     EXPECT_NE(r.find("AAPL"), nullptr);
 }
 
-TEST(InstrumentRegistry, AllReturnsAllSpecs) {
+TEST(InstrumentRegistry, AllReturnsAllSpecs)
+{
     InstrumentRegistry r;
     r.add(equity(1, "AAPL"));
     r.add(equity(2, "MSFT"));

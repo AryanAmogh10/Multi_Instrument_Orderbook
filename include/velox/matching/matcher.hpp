@@ -7,11 +7,13 @@
 
 #include <vector>
 
-namespace velox {
+namespace velox
+{
 
 // result from submitting an order
-struct MatchResult {
-    Order*             order{nullptr};  // the taker — always non-null
+struct MatchResult
+{
+    Order* order{nullptr}; // the taker — always non-null
     std::vector<Trade> trades;
 };
 
@@ -26,10 +28,10 @@ using SubmitResult = MatchResult;
 //   - Takers are returned via MatchResult; caller releases if is_terminal().
 //
 // Supports: Limit (GTC/IOC/FOK/Day), Market (IOC/FOK)
-class Matcher {
+class Matcher
+{
 public:
-    explicit Matcher(OrderBook& book, Pool& pool) noexcept
-        : book_(book), pool_(pool) {}
+    explicit Matcher(OrderBook& book, Pool& pool) noexcept : book_(book), pool_(pool) {}
 
     // Submit a taker. Caller must release result.order if it's terminal.
     MatchResult submit(Order* order);
@@ -46,15 +48,15 @@ public:
 private:
     [[nodiscard]] bool can_fully_fill(const Order& taker) const;
     void match(Order& taker, std::vector<Trade>& trades);
-    [[nodiscard]] static bool prices_cross(Side taker_side, Price taker_limit,
-                                           Price maker_price) noexcept;
+    [[nodiscard]] static bool
+    prices_cross(Side taker_side, Price taker_limit, Price maker_price) noexcept;
 
-    OrderBook&     book_;
-    Pool&          pool_;
+    OrderBook& book_;
+    Pool& pool_;
     LatencyTracker stats_;
 };
 
 // keep old name working
 using BookMatcher = Matcher;
 
-}  // namespace velox
+} // namespace velox
