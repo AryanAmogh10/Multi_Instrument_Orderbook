@@ -163,6 +163,21 @@ Single-threaded microbenchmarks on the matching hot path (Release build, GCC 15.
 
 Sweep throughput scales close to linearly with depth, as expected — most of the cost is walking the price ladder and recording trades. Numbers will vary by hardware; rebuild with `-DVELOX_BUILD_BENCHMARKS=ON` and run `./build/benchmarks/velox_bench` to measure on your own machine.
 
+### Latency distribution
+
+`velox_latency` captures 2 M individual `submit()` timings for the cross-and-fill path and reports the tail:
+
+```
+mean    : 194 ns
+p50     : 200 ns
+p99     : 300 ns
+p99.9   : 300 ns
+p99.99  : 3.3 µs    ← scheduler jitter
+max     : 76 µs     ← worst-case OS stall
+```
+
+A tight ~200 ns body with a thin tail. The jump at p99.99 is OS scheduling noise, not matching cost. Note: these were measured with `std::steady_clock` at ~100 ns resolution on this platform, so the sub-microsecond percentiles are quantized to 100 ns steps — the body is "≤ a couple hundred ns", and the tail is what's genuinely informative.
+
 ---
 
 ## License
