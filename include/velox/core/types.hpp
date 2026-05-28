@@ -7,7 +7,7 @@ namespace velox
 {
 
 // Strong types — prevent accidental mixing of e.g. Price and Quantity at compile time.
-// Roadmap §1.1: integer ticks only, never floats.
+// Roadmap 1.1: integer ticks only, never floats.
 enum class Price : std::int64_t
 {
 };
