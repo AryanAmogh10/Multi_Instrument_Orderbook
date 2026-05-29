@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
-#include "velox/orderbook/orderbook.hpp"
-#include "velox/utils/order_pool.hpp"
+#include "ordbk/orderbook/orderbook.hpp"
+#include "ordbk/utils/order_pool.hpp"
 
 #include <cassert>
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

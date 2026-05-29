@@ -1,4 +1,4 @@
-function(velox_set_warnings target)
+function(ordbk_set_warnings target)
     if(MSVC)
         target_compile_options(${target} PRIVATE
             /W4 /WX /permissive- /Zc:__cplusplus

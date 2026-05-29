@@ -1,11 +1,11 @@
-#include "velox/gateway/tcp.hpp"
+#include "ordbk/gateway/tcp.hpp"
 
 #include <atomic>
 #include <cstring>
 #include <stdexcept>
 #include <string>
 
-namespace velox::gateway::tcp
+namespace ordbk::gateway::tcp
 {
 
 #ifdef _WIN32
@@ -134,4 +134,4 @@ socket_t connect_to(std::string_view host, std::uint16_t port)
     return s;
 }
 
-} // namespace velox::gateway::tcp
+} // namespace ordbk::gateway::tcp

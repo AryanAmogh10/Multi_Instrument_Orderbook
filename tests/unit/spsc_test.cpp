@@ -1,12 +1,12 @@
 #include <gtest/gtest.h>
 
-#include "velox/utils/spsc_ring_buffer.hpp"
+#include "ordbk/utils/spsc_ring_buffer.hpp"
 
 #include <atomic>
 #include <thread>
 #include <vector>
 
-using namespace velox;
+using namespace ordbk;
 
 TEST(Spsc, EmptyOnConstruction)
 {

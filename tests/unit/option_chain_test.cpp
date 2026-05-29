@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "velox/instruments/option_chain.hpp"
+#include "ordbk/instruments/option_chain.hpp"
 
 #include <algorithm>
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

@@ -1,9 +1,9 @@
-#include "velox/protocol/codec.hpp"
+#include "ordbk/protocol/codec.hpp"
 
 #include <array>
 #include <type_traits>
 
-namespace velox::protocol
+namespace ordbk::protocol
 {
 
 // ---- BufferWriter --------------------------------------------------------
@@ -350,4 +350,4 @@ std::optional<MessageBody> decode_body(const MessageHeader& header,
     return std::nullopt;
 }
 
-} // namespace velox::protocol
+} // namespace ordbk::protocol

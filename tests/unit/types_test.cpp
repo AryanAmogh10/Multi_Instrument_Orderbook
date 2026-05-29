@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "velox/core/types.hpp"
+#include "ordbk/core/types.hpp"
 
-using namespace velox;
+using namespace ordbk;
 
 TEST(Types, UnderlyingExtraction)
 {

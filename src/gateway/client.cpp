@@ -1,8 +1,8 @@
-#include "velox/gateway/client.hpp"
+#include "ordbk/gateway/client.hpp"
 
 #include <array>
 
-namespace velox::gateway
+namespace ordbk::gateway
 {
 
 Client::Client(std::string_view host, std::uint16_t port) : sock_(tcp::connect_to(host, port)) {}
@@ -35,4 +35,4 @@ std::optional<protocol::DecodedMessage> Client::recv()
     }
 }
 
-} // namespace velox::gateway
+} // namespace ordbk::gateway

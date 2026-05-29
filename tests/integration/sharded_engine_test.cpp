@@ -1,10 +1,10 @@
 #include <gtest/gtest.h>
 
-#include "velox/matching/sharded_engine.hpp"
+#include "ordbk/matching/sharded_engine.hpp"
 
 #include <cassert>
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

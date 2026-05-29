@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "velox/instruments/option_contract.hpp"
+#include "ordbk/instruments/option_contract.hpp"
 
-using namespace velox;
+using namespace ordbk;
 
 // ---- ExpiryDate -----------------------------------------------------------
 

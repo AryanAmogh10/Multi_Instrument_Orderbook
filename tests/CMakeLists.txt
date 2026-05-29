@@ -1,4 +1,4 @@
-add_executable(velox_unit_tests
+add_executable(ordbk_unit_tests
     unit/smoke_test.cpp
     unit/types_test.cpp
     unit/order_test.cpp
@@ -18,9 +18,9 @@ add_executable(velox_unit_tests
     integration/options_e2e_test.cpp
     property/invariants_test.cpp
 )
-target_link_libraries(velox_unit_tests PRIVATE velox_core GTest::gtest_main)
-velox_set_warnings(velox_unit_tests)
-velox_apply_sanitizers(velox_unit_tests)
+target_link_libraries(ordbk_unit_tests PRIVATE ordbk_core GTest::gtest_main)
+ordbk_set_warnings(ordbk_unit_tests)
+ordbk_apply_sanitizers(ordbk_unit_tests)
 
 include(GoogleTest)
-gtest_discover_tests(velox_unit_tests)
+gtest_discover_tests(ordbk_unit_tests)

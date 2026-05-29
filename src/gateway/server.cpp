@@ -1,10 +1,10 @@
-#include "velox/gateway/server.hpp"
+#include "ordbk/gateway/server.hpp"
 
 #include <algorithm>
 #include <array>
 #include <mutex>
 
-namespace velox::gateway
+namespace ordbk::gateway
 {
 
 Server::Server(Engine& engine, std::uint16_t port)
@@ -101,4 +101,4 @@ void Server::session_loop(tcp::socket_t sock, std::uint64_t session_id)
     }
 }
 
-} // namespace velox::gateway
+} // namespace ordbk::gateway

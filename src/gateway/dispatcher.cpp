@@ -1,10 +1,10 @@
-#include "velox/gateway/dispatcher.hpp"
-#include "velox/utils/latency.hpp"
+#include "ordbk/gateway/dispatcher.hpp"
+#include "ordbk/utils/latency.hpp"
 
-namespace velox::gateway
+namespace ordbk::gateway
 {
 
-using namespace velox::protocol;
+using namespace ordbk::protocol;
 
 namespace
 {
@@ -162,4 +162,4 @@ void Dispatcher::handle_cancel(Session& s, const CancelOrderMsg& m)
     }
 }
 
-} // namespace velox::gateway
+} // namespace ordbk::gateway

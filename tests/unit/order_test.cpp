@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "velox/orderbook/order.hpp"
+#include "ordbk/orderbook/order.hpp"
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

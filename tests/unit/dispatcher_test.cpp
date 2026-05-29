@@ -3,11 +3,11 @@
 
 #include <gtest/gtest.h>
 
-#include "velox/gateway/dispatcher.hpp"
-#include "velox/utils/order_pool.hpp"
+#include "ordbk/gateway/dispatcher.hpp"
+#include "ordbk/utils/order_pool.hpp"
 
-using namespace velox;
-using namespace velox::protocol;
+using namespace ordbk;
+using namespace ordbk::protocol;
 
 namespace
 {

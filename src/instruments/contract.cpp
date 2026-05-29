@@ -1,9 +1,9 @@
-#include "velox/instruments/contract.hpp"
+#include "ordbk/instruments/contract.hpp"
 
 #include <cstdio>
 #include <stdexcept>
 
-namespace velox
+namespace ordbk
 {
 
 std::string ExpiryDate::to_string() const
@@ -97,4 +97,4 @@ Contract Contract::from_occ(std::string_view occ)
     return c;
 }
 
-} // namespace velox
+} // namespace ordbk

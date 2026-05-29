@@ -9,14 +9,14 @@
 
 #include <gtest/gtest.h>
 
-#include "velox/matching/book_matcher.hpp"
-#include "velox/utils/order_pool.hpp"
+#include "ordbk/matching/book_matcher.hpp"
+#include "ordbk/utils/order_pool.hpp"
 
 #include <cassert>
 #include <random>
 #include <unordered_map>
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

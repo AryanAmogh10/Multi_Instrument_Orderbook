@@ -1,6 +1,6 @@
-#include "velox/instruments/instrument_registry.hpp"
+#include "ordbk/instruments/instrument_registry.hpp"
 
-namespace velox
+namespace ordbk
 {
 
 void InstrumentRegistry::add(InstrumentSpec spec)
@@ -67,4 +67,4 @@ const InstrumentSpec* InstrumentRegistry::find(std::string_view symbol) const no
     return &instruments_[it->second];
 }
 
-} // namespace velox
+} // namespace ordbk

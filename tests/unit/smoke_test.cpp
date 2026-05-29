@@ -1,9 +1,9 @@
-#include "velox/core/version.hpp"
+#include "ordbk/core/version.hpp"
 #include <gtest/gtest.h>
 
 TEST(Smoke, VersionStringIsNonEmpty)
 {
-    EXPECT_FALSE(velox::kVersion.empty());
+    EXPECT_FALSE(ordbk::kVersion.empty());
 }
 
 TEST(Smoke, ArithmeticStillWorks)

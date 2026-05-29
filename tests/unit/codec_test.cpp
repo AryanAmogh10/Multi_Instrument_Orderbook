@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "velox/protocol/codec.hpp"
+#include "ordbk/protocol/codec.hpp"
 
-using namespace velox::protocol;
+using namespace ordbk::protocol;
 
 TEST(Codec, BufferWriterWritesLE)
 {

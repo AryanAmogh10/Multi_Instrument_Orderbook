@@ -1,6 +1,6 @@
 // Phase 4 §4.1: Microbenchmarks for the matching engine hot path.
 //
-// Run with: ./velox_bench --benchmark_format=console
+// Run with: ./ordbk_bench --benchmark_format=console
 // For latency percentiles add: --benchmark_repetitions=10
 //
 // Benchmark categories:
@@ -12,13 +12,13 @@
 
 #include <benchmark/benchmark.h>
 
-#include "velox/instruments/instrument_registry.hpp"
-#include "velox/matching/book_matcher.hpp"
-#include "velox/utils/order_pool.hpp"
+#include "ordbk/instruments/instrument_registry.hpp"
+#include "ordbk/matching/book_matcher.hpp"
+#include "ordbk/utils/order_pool.hpp"
 
 #include <cassert>
 
-using namespace velox;
+using namespace ordbk;
 
 // ---------------------------------------------------------------------------
 // Helpers

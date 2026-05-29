@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "velox/instruments/instrument_registry.hpp"
+#include "ordbk/instruments/instrument_registry.hpp"
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

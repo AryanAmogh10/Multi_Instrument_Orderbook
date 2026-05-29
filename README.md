@@ -1,4 +1,4 @@
-# velox-match
+# ordbk-match
 
 A high-performance C++20 matching engine supporting equities, futures, and options.
 Built to explore the internals of exchange matching systems — price-time priority, multi-instrument routing, binary wire protocols, and zero-allocation hot paths.
@@ -65,21 +65,21 @@ ctest --test-dir build --output-on-failure
 
 ```bash
 # With address + undefined behavior sanitizers
-cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DVELOX_SANITIZER=ASAN_UBSAN
+cmake -S . -B build-asan -DCMAKE_BUILD_TYPE=Debug -DORDBK_SANITIZER=ASAN_UBSAN
 cmake --build build-asan -j
 ctest --test-dir build-asan --output-on-failure
 
 # With thread sanitizer
-cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=Debug -DVELOX_SANITIZER=TSAN
+cmake -S . -B build-tsan -DCMAKE_BUILD_TYPE=Debug -DORDBK_SANITIZER=TSAN
 cmake --build build-tsan -j
 ctest --test-dir build-tsan --output-on-failure
 ```
 
 ```bash
 # Benchmarks (Google Benchmark)
-cmake -S . -B build-bench -DCMAKE_BUILD_TYPE=Release -DVELOX_BUILD_BENCHMARKS=ON
+cmake -S . -B build-bench -DCMAKE_BUILD_TYPE=Release -DORDBK_BUILD_BENCHMARKS=ON
 cmake --build build-bench -j
-./build-bench/benchmarks/velox_bench
+./build-bench/benchmarks/ordbk_bench
 ```
 
 ---
@@ -113,7 +113,7 @@ tests/property/
 ## Project layout
 
 ```
-include/velox/
+include/ordbk/
   core/           – Strong types (Price, Quantity, OrderId, …)
   orderbook/      – Order struct, OrderBook, trade record
   matching/       – Matcher, Engine, ShardedMatcher, Sweeper
@@ -161,11 +161,11 @@ Single-threaded microbenchmarks on the matching hot path (Release build, GCC 15.
 | Sweep 500 levels | ~77 µs | 6.5 M fills/s |
 | Sweep 1000 levels | ~157 µs | 6.4 M fills/s |
 
-Sweep throughput scales close to linearly with depth, as expected — most of the cost is walking the price ladder and recording trades. Numbers will vary by hardware; rebuild with `-DVELOX_BUILD_BENCHMARKS=ON` and run `./build/benchmarks/velox_bench` to measure on your own machine.
+Sweep throughput scales close to linearly with depth, as expected — most of the cost is walking the price ladder and recording trades. Numbers will vary by hardware; rebuild with `-DORDBK_BUILD_BENCHMARKS=ON` and run `./build/benchmarks/ordbk_bench` to measure on your own machine.
 
 ### Latency distribution
 
-`velox_latency` captures 2 M individual `submit()` timings for the cross-and-fill path and reports the tail:
+`ordbk_latency` captures 2 M individual `submit()` timings for the cross-and-fill path and reports the tail:
 
 ```
 mean    : 194 ns

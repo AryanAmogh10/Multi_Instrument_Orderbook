@@ -1,6 +1,6 @@
-#include "velox/instruments/chain.hpp"
+#include "ordbk/instruments/chain.hpp"
 
-namespace velox
+namespace ordbk
 {
 
 Chain::Chain(std::string underlying) : underlying_(std::move(underlying)) {}
@@ -137,4 +137,4 @@ std::vector<InstrumentId> Chain::expiring_on_or_before(ExpiryDate date) const
     return result;
 }
 
-} // namespace velox
+} // namespace ordbk

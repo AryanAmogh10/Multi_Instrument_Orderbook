@@ -1,11 +1,11 @@
 #include <gtest/gtest.h>
 
-#include "velox/matching/matching_engine.hpp"
-#include "velox/utils/order_pool.hpp"
+#include "ordbk/matching/matching_engine.hpp"
+#include "ordbk/utils/order_pool.hpp"
 
 #include <cassert>
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

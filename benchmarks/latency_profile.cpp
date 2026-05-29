@@ -8,20 +8,20 @@
 // record the nanoseconds, repeat. The book returns to empty after each
 // fully-crossed pair, so one book/matcher is reused across all samples.
 //
-// Build:  cmake -S . -B build -DVELOX_BUILD_BENCHMARKS=ON
-// Run:    ./build/benchmarks/velox_latency
+// Build:  cmake -S . -B build -DORDBK_BUILD_BENCHMARKS=ON
+// Run:    ./build/benchmarks/ordbk_latency
 
-#include "velox/instruments/instrument_registry.hpp"
-#include "velox/matching/matcher.hpp"
-#include "velox/utils/latency.hpp" // now_ns()
-#include "velox/utils/pool.hpp"
+#include "ordbk/instruments/instrument_registry.hpp"
+#include "ordbk/matching/matcher.hpp"
+#include "ordbk/utils/latency.hpp" // now_ns()
+#include "ordbk/utils/pool.hpp"
 
 #include <algorithm>
 #include <cstdint>
 #include <cstdio>
 #include <vector>
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

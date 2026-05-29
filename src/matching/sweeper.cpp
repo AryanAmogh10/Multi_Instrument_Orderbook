@@ -1,6 +1,6 @@
-#include "velox/matching/sweeper.hpp"
+#include "ordbk/matching/sweeper.hpp"
 
-namespace velox
+namespace ordbk
 {
 
 void Sweeper::register_instrument(InstrumentId id, ExpiryDate expiry)
@@ -47,4 +47,4 @@ std::vector<InstrumentId> Sweeper::sweep(ExpiryDate today)
     return expired;
 }
 
-} // namespace velox
+} // namespace ordbk

@@ -1,8 +1,8 @@
 #include <gtest/gtest.h>
 
-#include "velox/matching/expiry_sweeper.hpp"
+#include "ordbk/matching/expiry_sweeper.hpp"
 
-using namespace velox;
+using namespace ordbk;
 
 namespace
 {

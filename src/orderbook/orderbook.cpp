@@ -1,6 +1,6 @@
-#include "velox/orderbook/orderbook.hpp"
+#include "ordbk/orderbook/orderbook.hpp"
 
-namespace velox
+namespace ordbk
 {
 
 void OrderBook::add_resting(Order* order)
@@ -147,4 +147,4 @@ void OrderBook::clear_and_drain(const std::function<void(Order*)>& callback)
     order_map_.clear();
 }
 
-} // namespace velox
+} // namespace ordbk

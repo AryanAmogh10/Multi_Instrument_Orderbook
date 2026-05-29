@@ -1,6 +1,6 @@
-#include "velox/protocol/session.hpp"
+#include "ordbk/protocol/session.hpp"
 
-namespace velox::protocol
+namespace ordbk::protocol
 {
 
 void Session::emit(const MessageBody& body)
@@ -16,4 +16,4 @@ std::vector<std::byte> Session::take_outbound()
     return out;
 }
 
-} // namespace velox::protocol
+} // namespace ordbk::protocol

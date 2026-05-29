@@ -11,4 +11,4 @@ RUN cmake -S . -B build -DCMAKE_BUILD_TYPE=Release \
  && cmake --build build -j \
  && ctest --test-dir build --output-on-failure
 
-CMD ["/src/build/velox_engine"]
+CMD ["/src/build/ordbk_engine"]

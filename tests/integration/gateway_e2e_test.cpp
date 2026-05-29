@@ -1,14 +1,14 @@
 #include <gtest/gtest.h>
 
-#include "velox/gateway/client.hpp"
-#include "velox/gateway/server.hpp"
-#include "velox/utils/order_pool.hpp"
+#include "ordbk/gateway/client.hpp"
+#include "ordbk/gateway/server.hpp"
+#include "ordbk/utils/order_pool.hpp"
 
 #include <chrono>
 #include <thread>
 
-using namespace velox;
-using namespace velox::protocol;
+using namespace ordbk;
+using namespace ordbk::protocol;
 
 namespace
 {
