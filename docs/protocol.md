@@ -1,8 +1,8 @@
 # Wire Protocol — v1
 
-Binary, little-endian, request/response over TCP. Versioned from message #1
-(roadmap §3.1). All multi-byte fields are LE; structs are packed (no
-implicit padding) — readers must consume exactly `body_length` bytes.
+Binary, little-endian, request/response over TCP. Versioned from the first
+message. All multi-byte fields are LE; structs are packed (no implicit
+padding) — readers must consume exactly `body_length` bytes.
 
 ## Header (8 bytes)
 
@@ -97,11 +97,11 @@ NotLoggedOn ──Logon──► Active ──Logout──► Closing
 
 `NewOrder` / `CancelOrder` outside `Active` → `OrderReject{NotLoggedOn}`.
 
-## Limitations (Phase 3)
+## Limitations
 
-- `server_order_id` currently equals `client_order_id` — real renumbering
-  arrives with the gateway result router in Phase 4+.
+- `server_order_id` currently equals `client_order_id`; server-side
+  renumbering is not implemented.
 - No sequence-gap detection on either side. Clients should sanity-check
   monotonicity; servers ignore client sequence numbers.
-- `ModifyOrder` not yet supported. Cancel + new is the workaround.
-- No market data messages — those land in Phase 6.
+- `ModifyOrder` is not supported. Cancel + new is the workaround.
+- No market data messages.

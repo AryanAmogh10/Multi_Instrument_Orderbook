@@ -1,4 +1,4 @@
-// Phase 4 §4.1: Microbenchmarks for the matching engine hot path.
+// Microbenchmarks for the matching engine hot path.
 //
 // Run with: ./ordbk_bench --benchmark_format=console
 // For latency percentiles add: --benchmark_repetitions=10

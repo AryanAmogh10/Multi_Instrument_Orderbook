@@ -12,7 +12,7 @@ namespace ordbk::protocol
 {
 
 // Encoding errors are signalled by short return values; decoding errors return
-// nullopt. The wire format is little-endian throughout (roadmap §3.1).
+// nullopt. The wire format is little-endian throughout.
 
 class BufferWriter
 {

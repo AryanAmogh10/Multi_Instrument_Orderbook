@@ -1,7 +1,7 @@
 #pragma once
 
-// Thin cross-platform TCP shim. Synchronous blocking I/O. Phase 3 scope.
-// epoll / io_uring / IOCP arrive with the performance work in Phase 4.
+// Thin cross-platform TCP shim. Synchronous blocking I/O.
+// A production setup would swap this for epoll / io_uring / IOCP.
 
 #include <cstddef>
 #include <cstdint>

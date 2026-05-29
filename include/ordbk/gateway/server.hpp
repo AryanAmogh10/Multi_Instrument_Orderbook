@@ -12,8 +12,8 @@
 namespace ordbk::gateway
 {
 
-// Thread-per-connection TCP server. Phase 3 scope: a real exchange would use
-// epoll / io_uring / IOCP — that lands in Phase 4 along with the latency work.
+// Thread-per-connection TCP server. A production exchange would use
+// epoll / io_uring / IOCP instead; this keeps the I/O layer simple.
 class Server
 {
 public:

@@ -9,8 +9,8 @@ namespace
 
 Order make_order(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty)
 {
-    // Phase 4 field order: id, limit_price, initial_qty, filled_qty,
-    //                      instrument, client, status, side, type, tif, ts
+    // field order: id, limit_price, initial_qty, filled_qty,
+    //              instrument, client, status, side, type, tif, ts
     return Order{
         OrderId{id},
         Price{price},

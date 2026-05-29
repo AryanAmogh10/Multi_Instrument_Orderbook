@@ -17,10 +17,8 @@ namespace ordbk::protocol
 //   - on each fill/ack/reject emitted by the engine, the session encodes
 //     the appropriate outbound message
 //
-// Phase 3 wires submit() through ShardedEngine. Results are observed via a
-// callback registered at construction (e.g. by the dispatcher draining
-// completed orders). For the integration test we use the simpler approach of
-// having the gateway call the engine synchronously and push results back.
+// The gateway calls the engine synchronously and pushes results back through
+// the session, which encodes them to the outbound buffer.
 class Session
 {
 public:
