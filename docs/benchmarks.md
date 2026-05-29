@@ -2,8 +2,8 @@
 
 Two harnesses live under `benchmarks/`:
 
-- `ordbk_bench` — Google Benchmark microbenchmarks reporting mean wall-clock time per operation.
-- `ordbk_latency` — a standalone profiler that captures individual `submit()` latencies and reports the tail (p50 / p90 / p99 / p99.9 / p99.99 / max).
+- `ordbk_bench` - Google Benchmark microbenchmarks reporting mean wall-clock time per operation.
+- `ordbk_latency` - a standalone profiler that captures individual `submit()` latencies and reports the tail (p50 / p90 / p99 / p99.9 / p99.99 / max).
 
 Build and run:
 

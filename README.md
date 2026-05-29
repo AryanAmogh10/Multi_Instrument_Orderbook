@@ -1,18 +1,18 @@
 # ordbk-match
 
 A high-performance C++20 matching engine supporting equities, futures, and options.
-Built to explore the internals of exchange matching systems — price-time priority, multi-instrument routing, binary wire protocols, and zero-allocation hot paths.
+Built to explore the internals of exchange matching systems - price-time priority, multi-instrument routing, binary wire protocols, and zero-allocation hot paths.
 
 ---
 
 ## What it does
 
 - **Price-time priority matching** with full GTC / IOC / FOK / Day support
-- **Multi-instrument routing** — one `OrderBook` per instrument, sharded across N worker threads
-- **Options support** — OCC-format contract specifications, per-underlying chains, expiry sweeping
-- **Binary wire protocol** over TCP — logon, new order, cancel, fill, reject messages
-- **Zero heap allocation on the hot path** — pre-allocated `Pool` slab + intrusive linked lists
-- **Per-order latency tracking** — atomic histogram recording match time from arrival to result
+- **Multi-instrument routing** - one `OrderBook` per instrument, sharded across N worker threads
+- **Options support** - OCC-format contract specifications, per-underlying chains, expiry sweeping
+- **Binary wire protocol** over TCP - logon, new order, cancel, fill, reject messages
+- **Zero heap allocation on the hot path** - pre-allocated `Pool` slab + intrusive linked lists
+- **Per-order latency tracking** - atomic histogram recording match time from arrival to result
 
 ---
 
@@ -133,23 +133,23 @@ docs/             – Architecture, protocol spec, benchmark notes
 
 ## Key design decisions
 
-**Integer ticks, never floats** — prices are stored as `int64_t` ticks. A $150.00 strike with a 1-cent tick size is `Price{15000}`. Eliminates rounding issues entirely.
+**Integer ticks, never floats** - prices are stored as `int64_t` ticks. A $150.00 strike with a 1-cent tick size is `Price{15000}`. Eliminates rounding issues entirely.
 
-**Strong enum types** — `Price`, `Quantity`, `OrderId`, `InstrumentId` are `enum class` wrappers. The compiler catches mixing them up.
+**Strong enum types** - `Price`, `Quantity`, `OrderId`, `InstrumentId` are `enum class` wrappers. The compiler catches mixing them up.
 
-**Intrusive linked list for price levels** — `level_prev` / `level_next` pointers are embedded directly in `Order`. No separate node allocation per order, better cache locality when walking a level.
+**Intrusive linked list for price levels** - `level_prev` / `level_next` pointers are embedded directly in `Order`. No separate node allocation per order, better cache locality when walking a level.
 
-**Pre-allocated order pool** — `Pool` is a fixed slab allocated at startup. `acquire()` and `release()` are the only allocations on the matching path, and they're mutex-protected but happen outside the inner match loop.
+**Pre-allocated order pool** - `Pool` is a fixed slab allocated at startup. `acquire()` and `release()` are the only allocations on the matching path, and they're mutex-protected but happen outside the inner match loop.
 
-**SPSC queues between threads** — each shard has a wait-free ring buffer for inbound commands. The matching loop itself is single-threaded per instrument, so no locks inside matching.
+**SPSC queues between threads** - each shard has a wait-free ring buffer for inbound commands. The matching loop itself is single-threaded per instrument, so no locks inside matching.
 
-**Options as first-class instruments** — options are just `InstrumentType::Option` entries in the `InstrumentRegistry`. Each gets a normal `OrderBook`. The `Chain` is an index layer on top for chain queries; `Sweeper` handles end-of-day cleanup.
+**Options as first-class instruments** - options are just `InstrumentType::Option` entries in the `InstrumentRegistry`. Each gets a normal `OrderBook`. The `Chain` is an index layer on top for chain queries; `Sweeper` handles end-of-day cleanup.
 
 ---
 
 ## Performance
 
-Single-threaded microbenchmarks on the matching hot path (Release build, GCC 15.2, 12-core x86_64 @ 3.3 GHz). Measured with Google Benchmark — these are wall-clock times per operation, not synthetic estimates.
+Single-threaded microbenchmarks on the matching hot path (Release build, GCC 15.2, 12-core x86_64 @ 3.3 GHz). Measured with Google Benchmark - these are wall-clock times per operation, not synthetic estimates.
 
 | Operation | Time / op | Throughput |
 |---|---|---|
@@ -161,7 +161,7 @@ Single-threaded microbenchmarks on the matching hot path (Release build, GCC 15.
 | Sweep 500 levels | ~77 µs | 6.5 M fills/s |
 | Sweep 1000 levels | ~157 µs | 6.4 M fills/s |
 
-Sweep throughput scales close to linearly with depth, as expected — most of the cost is walking the price ladder and recording trades. Numbers will vary by hardware; rebuild with `-DORDBK_BUILD_BENCHMARKS=ON` and run `./build/benchmarks/ordbk_bench` to measure on your own machine.
+Sweep throughput scales close to linearly with depth, as expected - most of the cost is walking the price ladder and recording trades. Numbers will vary by hardware; rebuild with `-DORDBK_BUILD_BENCHMARKS=ON` and run `./build/benchmarks/ordbk_bench` to measure on your own machine.
 
 ### Latency distribution
 
@@ -176,10 +176,10 @@ p99.99  : 3.3 µs    ← scheduler jitter
 max     : 76 µs     ← worst-case OS stall
 ```
 
-A tight ~200 ns body with a thin tail. The jump at p99.99 is OS scheduling noise, not matching cost. Note: these were measured with `std::steady_clock` at ~100 ns resolution on this platform, so the sub-microsecond percentiles are quantized to 100 ns steps — the body is "≤ a couple hundred ns", and the tail is what's genuinely informative.
+A tight ~200 ns body with a thin tail. The jump at p99.99 is OS scheduling noise, not matching cost. Note: these were measured with `std::steady_clock` at ~100 ns resolution on this platform, so the sub-microsecond percentiles are quantized to 100 ns steps - the body is "≤ a couple hundred ns", and the tail is what's genuinely informative.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT - see [LICENSE](LICENSE).

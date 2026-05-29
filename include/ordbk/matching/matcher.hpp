@@ -13,7 +13,7 @@ namespace ordbk
 // result from submitting an order
 struct MatchResult
 {
-    Order* order{nullptr}; // the taker — always non-null
+    Order* order{nullptr}; // the taker - always non-null
     std::vector<Trade> trades;
 };
 
@@ -39,7 +39,7 @@ public:
     // Cancel a resting order and return its slot to the pool.
     bool cancel(OrderId id);
 
-    // Nuke every resting order — used when an instrument expires.
+    // Nuke every resting order - used when an instrument expires.
     void cancel_all();
 
     [[nodiscard]] const OrderBook& book() const noexcept { return book_; }

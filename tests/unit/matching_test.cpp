@@ -23,7 +23,7 @@ Order* mk(std::uint64_t id,
           TimeInForce tif = TimeInForce::GTC)
 {
     Order* o = g_pool.acquire_or_abort();
-    assert(o && "matching test pool exhausted — increase g_pool size");
+    assert(o && "matching test pool exhausted - increase g_pool size");
     *o = Order{
         OrderId{id},
         Price{price},

@@ -12,7 +12,7 @@ namespace ordbk
 {
 
 // Routes orders to the right OrderBook+Matcher by InstrumentId.
-// Single-threaded — ShardedMatcher handles concurrency by running one Engine
+// Single-threaded - ShardedMatcher handles concurrency by running one Engine
 // per worker thread, each owning a disjoint slice of instruments.
 //
 // Registry must be frozen before constructing this.

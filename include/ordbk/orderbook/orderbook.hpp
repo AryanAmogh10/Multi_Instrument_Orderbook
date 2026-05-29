@@ -12,7 +12,7 @@ namespace ordbk
 {
 
 // Intrusive doubly-linked list for orders at one price level.
-// Uses level_prev/level_next pointers in Order — no extra allocation per node.
+// Uses level_prev/level_next pointers in Order - no extra allocation per node.
 struct PriceLevel
 {
     Order* head{nullptr};
@@ -43,7 +43,7 @@ struct PriceLevel
         o->level_prev = o->level_next = nullptr;
     }
 
-    // O(1) removal anywhere in the list — intrusive links make this easy
+    // O(1) removal anywhere in the list - intrusive links make this easy
     void erase(Order* o) noexcept
     {
         if (o->level_prev)

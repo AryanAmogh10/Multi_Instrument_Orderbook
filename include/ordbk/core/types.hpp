@@ -6,7 +6,7 @@
 namespace ordbk
 {
 
-// Strong types — prevent accidental mixing of e.g. Price and Quantity at compile time.
+// Strong types - prevent accidental mixing of e.g. Price and Quantity at compile time.
 // Integer ticks only, never floats.
 enum class Price : std::int64_t
 {

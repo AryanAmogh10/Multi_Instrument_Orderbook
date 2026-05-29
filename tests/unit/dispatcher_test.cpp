@@ -1,4 +1,4 @@
-// Unit tests for the gateway Dispatcher — drives Session+MatchingEngine
+// Unit tests for the gateway Dispatcher - drives Session+MatchingEngine
 // without any TCP involved.
 
 #include <gtest/gtest.h>

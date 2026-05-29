@@ -15,7 +15,7 @@ namespace ordbk
 
 // Fixed-size slab allocator for Order objects.
 // Pre-allocates everything upfront so malloc never gets called on the hot path.
-// acquire/release are mutex-protected — only happens at order entry/exit anyway.
+// acquire/release are mutex-protected - only happens at order entry/exit anyway.
 //
 // Caller must never delete Order* pointers directly; the pool owns the memory.
 class Pool
@@ -51,7 +51,7 @@ public:
         free_slots_[stack_top_++] = idx;
     }
 
-    // Like acquire() but aborts if the pool is full — useful in tests.
+    // Like acquire() but aborts if the pool is full - useful in tests.
     [[nodiscard]] Order* acquire_or_abort() noexcept
     {
         Order* o = acquire();
@@ -62,7 +62,7 @@ public:
 
     [[nodiscard]] std::size_t capacity() const noexcept { return storage_.size(); }
 
-    // Rough estimate only — not synchronized.
+    // Rough estimate only - not synchronized.
     [[nodiscard]] std::size_t available_approx() const noexcept { return stack_top_; }
 
 private:

@@ -173,7 +173,7 @@ TEST(OptionsE2E, OptionBooksAreIsolated)
     ask->id = OrderId{++oid};
     eng.submit(ask);
 
-    // Put is a different instrument — should see an empty book.
+    // Put is a different instrument - should see an empty book.
     EXPECT_TRUE(eng.book(InstrumentId{11})->empty());
 
     // Equity book also untouched.
@@ -217,7 +217,7 @@ TEST(OptionsE2E, ExpireSweepIntegration)
 
     sweeper.set_callback([&](InstrumentId id) { eng.expire_instrument(id); });
 
-    // Sweep on Jan expiry — should retire ids 10 and 11.
+    // Sweep on Jan expiry - should retire ids 10 and 11.
     auto expired = sweeper.sweep(kJan);
     EXPECT_EQ(expired.size(), 2u);
     EXPECT_EQ(eng.book(InstrumentId{10}), nullptr);

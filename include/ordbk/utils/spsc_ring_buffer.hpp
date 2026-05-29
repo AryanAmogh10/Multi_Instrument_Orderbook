@@ -68,7 +68,7 @@ public:
 private:
     static constexpr std::size_t kMask = Capacity - 1;
 
-    // Hardcoded to 64 — matches x86_64, ARM64, and most modern CPUs. We avoid
+    // Hardcoded to 64 - matches x86_64, ARM64, and most modern CPUs. We avoid
     // std::hardware_destructive_interference_size because GCC warns it changes
     // between -mtune values and isn't ABI-stable.
     static constexpr std::size_t kCacheLine = 64;

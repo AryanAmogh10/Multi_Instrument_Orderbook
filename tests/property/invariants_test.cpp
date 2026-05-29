@@ -29,7 +29,7 @@ OrderPool g_pool{8192};
 Order* mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty, TimeInForce tif)
 {
     Order* o = g_pool.acquire_or_abort();
-    assert(o && "invariants test pool exhausted — increase g_pool size");
+    assert(o && "invariants test pool exhausted - increase g_pool size");
     *o = Order{
         OrderId{id},
         Price{price},

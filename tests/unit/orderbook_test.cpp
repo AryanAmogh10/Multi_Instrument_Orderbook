@@ -18,7 +18,7 @@ OrderPool g_pool{256};
 Order* mk(std::uint64_t id, Side side, std::int64_t price, std::uint64_t qty)
 {
     Order* o = g_pool.acquire_or_abort();
-    assert(o && "orderbook test pool exhausted — increase g_pool size");
+    assert(o && "orderbook test pool exhausted - increase g_pool size");
     *o = Order{
         OrderId{id},
         Price{price},

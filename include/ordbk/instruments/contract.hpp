@@ -25,7 +25,7 @@ enum class SettlementType : std::uint8_t
     Cash
 };
 
-// Calendar date for expiry — comparable chronologically.
+// Calendar date for expiry - comparable chronologically.
 struct ExpiryDate
 {
     std::uint16_t year{};
@@ -55,7 +55,7 @@ struct Contract
     // Build the OCC-style 21-char symbol string.
     std::string occ_symbol() const;
 
-    // Parse OCC symbol — throws std::invalid_argument on bad input.
+    // Parse OCC symbol - throws std::invalid_argument on bad input.
     static Contract from_occ(std::string_view occ);
 };
 

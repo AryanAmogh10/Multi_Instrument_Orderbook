@@ -4,11 +4,11 @@
 // For latency percentiles add: --benchmark_repetitions=10
 //
 // Benchmark categories:
-//   BM_LimitRests      — submit a non-crossing limit order (rests in book)
-//   BM_LimitCross      — two matching orders produce one trade
-//   BM_Cancel          — add then cancel a resting order
-//   BM_DeepBook_Sweep  — taker sweeps a 1 000-order deep book (stress path)
-//   BM_MarketIOC       — market IOC against 100 levels
+//   BM_LimitRests      - submit a non-crossing limit order (rests in book)
+//   BM_LimitCross      - two matching orders produce one trade
+//   BM_Cancel          - add then cancel a resting order
+//   BM_DeepBook_Sweep  - taker sweeps a 1 000-order deep book (stress path)
+//   BM_MarketIOC       - market IOC against 100 levels
 
 #include <benchmark/benchmark.h>
 
@@ -93,7 +93,7 @@ static void BM_LimitCross(benchmark::State& state)
         matcher.submit(make_order(pool, id++, Side::Sell, 100, 1));           // rests
         auto res = matcher.submit(make_order(pool, id++, Side::Buy, 100, 1)); // fills
         benchmark::DoNotOptimize(res);
-        pool.release(res.order); // taker fully filled — release
+        pool.release(res.order); // taker fully filled - release
     }
     state.SetItemsProcessed(static_cast<std::int64_t>(state.iterations()));
 }
@@ -158,7 +158,7 @@ BENCHMARK(BM_DeepBook_Sweep)->Arg(100)->Arg(500)->Arg(1000);
 
 // ---------------------------------------------------------------------------
 // BM_MarketIOC: market IOC taker versus a 100-level ask book (repeated with
-// the same book — each taker drains levels, so this degrades gracefully)
+// the same book - each taker drains levels, so this degrades gracefully)
 // ---------------------------------------------------------------------------
 static void BM_MarketIOC(benchmark::State& state)
 {

@@ -38,7 +38,7 @@ public:
     // Sorted list of distinct expiry dates in the chain.
     [[nodiscard]] std::vector<ExpiryDate> expiries() const;
 
-    // Contracts expiring on or before a given date — used for EOD sweeping.
+    // Contracts expiring on or before a given date - used for EOD sweeping.
     [[nodiscard]] std::vector<InstrumentId> expiring_on_or_before(ExpiryDate date) const;
 
     [[nodiscard]] const std::string& underlying() const noexcept { return underlying_; }

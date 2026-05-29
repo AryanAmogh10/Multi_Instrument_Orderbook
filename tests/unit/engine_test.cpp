@@ -26,7 +26,7 @@ InstrumentRegistry make_registry()
 Order* mk(std::uint64_t id, InstrumentId inst, Side side, std::int64_t price, std::uint64_t qty)
 {
     Order* o = g_pool.acquire_or_abort();
-    assert(o && "engine test pool exhausted — increase g_pool size");
+    assert(o && "engine test pool exhausted - increase g_pool size");
     *o = Order{
         OrderId{id},
         Price{price},

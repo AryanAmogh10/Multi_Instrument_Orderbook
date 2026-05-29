@@ -3,6 +3,6 @@
 
 int main()
 {
-    std::cout << "ordbk-match " << ordbk::kVersion << " — engine offline\n";
+    std::cout << "ordbk-match " << ordbk::kVersion << " - engine offline\n";
     return 0;
 }

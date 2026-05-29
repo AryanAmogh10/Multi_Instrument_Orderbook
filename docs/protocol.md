@@ -1,8 +1,8 @@
-# Wire Protocol — v1
+# Wire Protocol - v1
 
 Binary, little-endian, request/response over TCP. Versioned from the first
 message. All multi-byte fields are LE; structs are packed (no implicit
-padding) — readers must consume exactly `body_length` bytes.
+padding) - readers must consume exactly `body_length` bytes.
 
 ## Header (8 bytes)
 
@@ -14,7 +14,7 @@ padding) — readers must consume exactly `body_length` bytes.
 | 4      | 4    | `sequence`         | Monotonic per direction         |
 
 Max `body_length` = 4096. Receivers MUST drop the connection on version
-mismatch or oversize body — both flagged as `Framer::Error`.
+mismatch or oversize body - both flagged as `Framer::Error`.
 
 ## Message types
 
@@ -32,14 +32,14 @@ mismatch or oversize body — both flagged as `Framer::Error`.
 
 ## Bodies
 
-### Logon (0x01) — 4 bytes
+### Logon (0x01) - 4 bytes
 | Offset | Size | Field       |
 |-------:|-----:|-------------|
 | 0      | 4    | `client_id` |
 
-### Logout (0x02) / Heartbeat (0x03) — 0 bytes
+### Logout (0x02) / Heartbeat (0x03) - 0 bytes
 
-### NewOrder (0x10) — 32 bytes
+### NewOrder (0x10) - 32 bytes
 | Offset | Size | Field             | Notes                                |
 |-------:|-----:|-------------------|--------------------------------------|
 | 0      | 8    | `client_order_id` | Used as the engine's `OrderId` (v1)  |
@@ -51,19 +51,19 @@ mismatch or oversize body — both flagged as `Framer::Error`.
 | 16     | 8    | `price`           | `int64` ticks                        |
 | 24     | 8    | `quantity`        |                                      |
 
-### CancelOrder (0x11) — 12 bytes
+### CancelOrder (0x11) - 12 bytes
 | Offset | Size | Field             |
 |-------:|-----:|-------------------|
 | 0      | 8    | `client_order_id` |
 | 8      | 4    | `instrument_id`   |
 
-### OrderAck (0x20) — 16 bytes
+### OrderAck (0x20) - 16 bytes
 | Offset | Size | Field             |
 |-------:|-----:|-------------------|
 | 0      | 8    | `client_order_id` |
 | 8      | 8    | `server_order_id` |
 
-### OrderReject (0x21) — 9 bytes
+### OrderReject (0x21) - 9 bytes
 | Offset | Size | Field             |
 |-------:|-----:|-------------------|
 | 0      | 8    | `client_order_id` |
@@ -73,7 +73,7 @@ Reasons: `0`=Unknown, `1`=UnknownInstrument, `2`=InvalidQuantity,
 `3`=InvalidPrice, `4`=InvalidTif, `5`=NotLoggedOn, `6`=DuplicateOrderId,
 `7`=InsufficientLiquidity.
 
-### Fill (0x22) — 33 bytes
+### Fill (0x22) - 33 bytes
 | Offset | Size | Field             |
 |-------:|-----:|-------------------|
 | 0      | 8    | `client_order_id` |
@@ -82,7 +82,7 @@ Reasons: `0`=Unknown, `1`=UnknownInstrument, `2`=InvalidQuantity,
 | 24     | 8    | `quantity`        |
 | 32     | 1    | `post_status`     | `OrderStatus` underlying |
 
-### Cancelled (0x23) — 8 bytes
+### Cancelled (0x23) - 8 bytes
 | Offset | Size | Field             |
 |-------:|-----:|-------------------|
 | 0      | 8    | `client_order_id` |
